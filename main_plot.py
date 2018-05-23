@@ -5,7 +5,7 @@ import scipy.spatial as sp
 import shapely.geometry as sg
 from shapely.geometry.polygon import Polygon
 from matplotlib import colors as mcolors
-import "Voronoi_boundaries" as vb
+import Voronoi_boundaries as vb
 
 colors = [
 'red',                #ff0000 = 255   0   0
@@ -74,27 +74,52 @@ colors = [
 'mediumpurple3'      #8060c0 = 128  96 192
     ]
 
-def PlotAll(C, A, assignment, bounded_regions, bbox, output):
-    diagram = sp.Voronoi(C)
+
+def PlotAllVoronoi(C, A, assignment, bounded_regions, bbox, output):
     f = open(output, "w")
-    # sp.voronoi_plot_2d(diagram)
     f.write(str(len(C))+" "+str(len(A))+"\n")
     for i in range(len(C)):
         f.write(str(C[i][0])+" "+str(C[i][1])+" "+str(colors[i])+"\n")
     for j in range(len(A)):
         f.write(str(A[j][0])+" "+str(A[j][1])+" "+str(colors[assignment[j]])+"\n")
 
-
     for r in bounded_regions:
-        if bounded_regions[r] == []: continue
-        region = bounded_regions[r]
-        convex_hull = sg.MultiPoint(region).convex_hull
-        x,y = convex_hull.exterior.xy
+        x,y = r.exterior.xy
         for i in range(len(x)):
             f.write(str(x[i])+","+str(y[i])+" ")
-        f.write("\n") #x, y, color = 'black')
+        f.write("\n") 
     f.close()
 
+def plot_helperVoronoi(C_3D, A, assign_pairs, bbox, outputfile):
+    C = [[p[0],p[1]] for p in C_3D]
+    regions = vb.power_cells(C_3D, bbox)
+    PlotAllVoronoi(C, A, assign_pairs, regions, bbox, outputfile)
+
+def plot_helperVoronoi_fromfile(input_filename, outputfile):
+    C_3D, A, assign_pairs, box = vb.Parse(input_filename)
+    C = [[p[0],p[1]] for p in C_3D]
+    regions = vb.power_cells(C_3D, bbox)
+    PlotAllVoronoi(C, A, assign_pairs, regions, bbox, outputfile)
+
+
+
+
+
+
+#######################################################
+#######################################################
+#######################################################
+####### End of functions for Voronoi diagrams   #######
+####### Begining of functions for GNUplot diagrams ####
+#######################################################
+#######################################################
+#######################################################
+#######################################################
+#######################################################
+#######################################################
+
+    
+    
 def Parse_boundary(filename):
     f = open(filename, "r")
     lines = f.readlines()
@@ -114,19 +139,6 @@ def Parse_boundary(filename):
     f.close()
     return boundaries
     
-def Parse_and_plot_boundary(filename):
-    f = open(filename, "r")
-    lines = f.readlines()
-    points = []
-    for l in lines:
-        s = l.split()
-        x = float(s[0])
-        y = float(s[1])
-        points.append([x,y])
-        
-    convex_hull = sg.MultiPoint(points).convex_hull
-    x,y = convex_hull.exterior.xy
-        
 def Parse(filename):
     f = open(filename, "r")
     lines = f.readlines()
@@ -172,22 +184,6 @@ def Parse(filename):
         # print(polygons[-1].exterior.xy)
     f.close()
     return C,A,polygons,[[x_min,y_min],[x_max,y_max]]
-
-def PlotAll(C, A, polygons, bbox):
-    # diagram = sp.Voronoi(C)
-    # sp.voronoi_plot_2d(diagram)
-    for i in range(len(C)):
-        # print(C[i])
-        plt.plot(C[i][0],C[i][1], 'd', color = C[i][2])
-    for j in range(len(A)):
-        if j % 1000 == 0 : print(j)
-        plt.plot(A[j][0],A[j][1], 'x', color = A[j][2])
-    # axes = plt.gca()
-    for p in polygons:
-        plt.plot(p.exterior.xy[0], p.exterior.xy[1],
-                     color = 'black')
-    plt.axis([bbox[0][0],bbox[1][0], bbox[0][1],bbox[1][1]])
-    plt.show(block=True)
 
 
 def GNUplot_boundary(p,f):
@@ -237,14 +233,14 @@ def GNUplot_point(p,f):
             col = colors[p[2]]
     f.write('set object circle at '+str(p[0])+","+str(p[1])+' radius char 0.2 fillcolor rgb "'+col+'"\n')
 
-def GNUplot(C, A, boundary, polygons, non_clipped,
+def GNUplot(C, A, boundary, polygons, clipped,
                 bbox, outputfilename, print_p):
     f = open(outputfilename, "w")
     if print_p:
         for c in C+A:
             GNUplot_point(c,f)
-    for i in range(len(non_clipped)):
-        GNUplot_nonclipped(non_clipped[i],f)
+    for i in range(len(clipped)):
+        GNUplot_nonclipped(clipped[i],f)
     for i in range(len(polygons)):
         # col = C[i][2]
         col = polygons[i][1]
@@ -269,17 +265,6 @@ def GNUplot(C, A, boundary, polygons, non_clipped,
     # f.write("pause -1\n")
     f.close()
 
-def plot_helper(C_3D, A, boundary, polygons, non_clipped,
-                    bbox, outputfilename,
-                    print_p):
-    # bbox = find_bounding_box(C_3D)
-    # print(bbox)
-    # minpt, maxpt = bbox
-    # extent = find_extent([minpt,maxpt])
-    # smallpt, bigpt = [minpt[i]-extent[i] for i in range(3)], [maxpt[i]+extent[i] for i in range(3)]
-    # PlotAll(C_3D, A, polygons, bbox)
-    GNUplot(C_3D, A, boundary, polygons, non_clipped,
-                bbox, outputfilename, print_p)
 
 def get_approx_boundary(A):
     Ap = [[p[0],p[1]] for p in A]
@@ -301,24 +286,20 @@ def clip(polygons, boundary):
     # for p in new_clipped:
     #     print(p)
     return new_clipped
-    
-if __name__ == '__main__':
-    if len(sys.argv) < 3:
-        print("Use: ", sys.argv[0], "[file name] [boundary file] [output GNUplot file] [print point? True/False]")
-        exit(-1)
-    C_3D, A, polygons, bbox = Parse(sys.argv[1])
 
-    ## For testing : HERE we need to replace with the actual
-    ## state boundary
-    # boundary = [get_approx_boundary(A)]
-    if sys.argv[4] == "True":
-        print_points = True
-    else: print_points = False
-    # Parse_and_plot_boundary(sys.argv[2])
-    boundary = Parse_boundary(sys.argv[2])
 
+def plot_helperGNUplot_fromfile(input_filename, boundary_filename,
+                                output_filename, print_points=False):
+    C_3D, A, polygons, bbox = Parse(input_filename)
+    boundary = Parse_boundary(boundary_filename)
     clipped_polygons = clip(polygons, boundary)
-    plot_helper(C_3D, A, boundary, clipped_polygons,
-                    polygons, bbox, sys.argv[3],
-                    print_points)
+    GNUplot(C_3D, A, boundary, clipped_polygons, polygons,
+            bbox, output_filename, print_points)
+
+def plot_helperGNUplot(C_3D, A, polygons, bbox, boundary_filename,
+                       output_filename, print_points=False):
+    boundary = Parse_boundary(boundary_filename)
+    clipped_polygons = clip(polygons, boundary)
+    GNUplot(C_3D, A, boundary, clipped_polygons, polygons,
+            bbox, output_filename, print_points)
     
