@@ -2,7 +2,29 @@
    Input: the list of shapely.geometry.polygon.Polygons, one for each center.
 '''
 
+from math import sqrt
+
 def swap(pair): return pair[1],pair[0]
+
+def vec(tail, head): return head[0]-tail[0], head[1]-tail[1]
+
+def dotproduct(u,v): return u[0]*v[0]+u[1]*v[1]
+
+def normsq(u): return dotproduct(u,u)
+
+def norm(u): return sqrt(normsq(u))
+
+def _remove_redundant(pts):
+    "Mutates a list of points to get rid of those points that are not needed to define polygon"
+    i = 0
+    while i < len(pts): #list pts changes during loop
+        #test if point i+1 is redundant
+        vec1 = vec(pts[i], pts[(i+1)%len(pts)])
+        vec2 = vec(pts[(i+1)%len(pts)], pts[(i+2)%len(pts)])
+        if dotproduct(vec1, vec2) >= .999999*norm(vec1)*norm(vec2):
+            del pts[(i+1)%len(pts)]
+        else:
+            i = i+1
 
 class SegmentMapper:
     def __init__(self):
@@ -36,33 +58,28 @@ class EGraph:
     # Is self.vertices needed?
     def __init__(self):
         self.segmentmapper = SegmentMapper()
-        self.vertices = []
+        self.vertices = [[]] #start with one vertex, which will represent infinite face
         self.next = {}
+                
     def process_cell(self, cell):
         '''cell is a polygon
         '''
         self.vertices.append([])
-        pts = list(cell.exterior.coords)
-        pt0 = pts[0]
-        print("cell ", pts) #debugging
-        first = True
-        for pt1 in pts[1:]:
-            print(pt0, pt1) #debugging
-            new_id = self.new_segment_helper(pt0, pt1)
-            pt0 = pt1
-            if first:
+        pts = list(cell.exterior.coords)[:-1] #omit last pt, which equals first
+        _remove_redundant(pts) #first get rid of redundant pts
+        for i in range(len(pts)):
+            new_id = self.__new_segment_helper(pts[i], pts[(i+1)%len(pts)], -1) #access last vertex
+            if i==0:
                 first_id = new_id
-                first = False
-            else: #not first
+            else:
                 self.next[prev_id] = new_id
             prev_id = new_id
-        self.next[prev_id] = first_id
+        self.next[new_id] = first_id
     
-    def new_segment_helper(self, pt0, pt1):
+    def __new_segment_helper(self, pt0, pt1, vertex_id):
             segment = pt0, pt1
             self.segmentmapper.add_segment(segment)
             new_id = self.segmentmapper.segment2id[segment]
-            vertex_id = -1 # access last entry in vertex table
             self.vertices[vertex_id].append(new_id)
             return new_id
 
@@ -81,9 +98,10 @@ class EGraph:
         self.vertices.append([])
         while True:
             pt1 = start2end[pt0]
-            new_id = self.new_segment_helper(pt0, pt1)
+            new_id = self.__new_segment_helper(pt0, pt1, 0) #access vertex 0
             if pt1 == initial_point:
                 break
+            pt0 = pt1
 
     def next(self, id): return self.next[id]
 
@@ -93,7 +111,12 @@ class EGraph:
 
     def num_darts(self): return len(self.next)
             
-#convex_hulls = [sg.MultiPoint(region).convex_hull for region in proj_regions]
+'''
+import build_dp_graph
+from Voronoi_boundaries import *
+C_3D, A, assign_pairs, box = Parse("test_assignment.txt")
+proj_regions = power_cells(C_3D, box)
+#
 #G = build_dp_graph.EGraph()
-#for poly in convex_hulls: G.process_cell(poly)
-    
+#for poly in proj_regions: G.process_cell(poly)
+'''    
