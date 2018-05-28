@@ -71,12 +71,14 @@ def find_proj(bounded_regions):
     return proj_regions
 
 def region_contains(bounded_region, pt):
-    return len(bounded_region) == len(sp.ConvexHull(bounded_region+[np.array(pt)]).vertices)
+    hull = sp.ConvexHull(bounded_region+[np.array(pt)])
+    return set(bounded_region) == {tuple(hull.points[i]) for i in hull.vertices}
 
 def find_region_containing(bounded_regions, pt):
     '''Given a list of bounded regions (each specified by a list of points), and given a point,
        return the first bounded region that contains the point.  (Assumes there is at least one.)'''
     regions_containing = [bounded_region for bounded_region in bounded_regions if region_contains(bounded_region, pt)]
+    assert len(regions_containing) == 1
     return regions_containing[0]
 
 def power_cells(C_3D, bbox):
@@ -91,7 +93,8 @@ def power_cells(C_3D, bbox):
                      [bigpt[0],smallpt[1],bigpt[2]],
                      bigpt])
     diagram = sp.Voronoi(np.concatenate((C_3D,boundary)))
-    bounded_regions = [[diagram.vertices[j] for j in region]
+    #A 'bounded region' is a list of tuples
+    bounded_regions = [[tuple(diagram.vertices[j]) for j in region]
                        for region in diagram.regions
                        if region != [] and not unbounded(region)]
     ordered_bounded_regions = [find_region_containing(bounded_regions, pt) for pt in C_3D]
