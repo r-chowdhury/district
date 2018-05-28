@@ -44,9 +44,11 @@ def go(shapefilename, redistrict_assignment_filename, outfilename):
                 assignment_data = [int(x) for x in items[2:]]
                 districts = [assignment_data[i] for i in range(0, len(assignment_data), 2)]
                 subpops = [assignment_data[i] for i in range(1, len(assignment_data), 2)]
-                if len(districts) > 2:
+                if counter == 1795:
+                    print("here")
+                if len(districts) >= 2:
                     fout.write(str(counter)+" ")
-                    for district,subpop in zip(districts,subpop):
+                    for district,subpop in zip(districts,subpops):
                         fout.write(str(district)+" "+str(subpop)+" ")
                     fout.write("\n")
                 else:
