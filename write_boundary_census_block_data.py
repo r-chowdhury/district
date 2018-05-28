@@ -36,7 +36,7 @@ def go(shapefilename, redistrict_assignment_filename, outfilename):
         pop = shape_rec.record[7]
         if pop > 0:
                 counter = counter + 1
-                if counter % 1000 == 0:
+                if counter % 10000 == 0:
                         print(counter)
                         fout.flush()
                 line = af.readline() #get corresponding line from assignment file
@@ -44,8 +44,6 @@ def go(shapefilename, redistrict_assignment_filename, outfilename):
                 assignment_data = [int(x) for x in items[2:]]
                 districts = [assignment_data[i] for i in range(0, len(assignment_data), 2)]
                 subpops = [assignment_data[i] for i in range(1, len(assignment_data), 2)]
-                if counter == 1795:
-                    print("here")
                 if len(districts) >= 2:
                     fout.write(str(counter)+" ")
                     for district,subpop in zip(districts,subpops):
@@ -53,15 +51,19 @@ def go(shapefilename, redistrict_assignment_filename, outfilename):
                     fout.write("\n")
                 else:
                    #see if census block intersects the boundary between districts
-                   candidate_districts = set()
+                   assert len(districts)==1
+                   assigned_district = districts[0]
+                   candidate_districts = {assigned_district}
+                   neighboring_darts = G.vertices[assigned_district]
                    census_block = shape(shape_rec.shape)
-                   for segment in G.segmentmapper.get_segments():
-                        segment_shape = LineString(segment)
-                        if segment_shape.intersects(census_block):
+                   for segment in [G.segmentmapper.id2segment[d] for d in neighboring_darts]:
+                       segment_shape = LineString(segment)
+                       if segment_shape.intersects(census_block):
                                 i1, i2 = segment2districts(G, segment) # ids of the two bordering districts
+                                #one of these is assigned_district so is already in set
                                 candidate_districts.add(i1)
                                 candidate_districts.add(i2)
-                   if len(candidate_districts) > 0:
+                   if len(candidate_districts) > 1:
                        fout.write(str(counter)+" ")
                        for district in candidate_districts:
                         fout.write(str(district)+" "+ str(subpops[0] if district == districts[0] else 0)+" ")
