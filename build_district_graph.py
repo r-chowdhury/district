@@ -39,7 +39,7 @@ class SegmentMapper:
            reverse of each other, the corresponding dart ids differ only in their LSBs.
            They have the same edge ids.
         '''
-        if swap(segment) in self.segment2id:
+        if segment in self.segment2id or swap(segment) in self.segment2id:
             self.segment2id[segment] = self.segment2id[swap(segment)] + 1
         else: 
             self.segment2id[segment] = 2*self.num_edges
@@ -58,9 +58,14 @@ class EGraph:
     # Is self.vertices needed?
     def __init__(self):
         self.segmentmapper = SegmentMapper()
-        self.vertices = [[]] #start with one vertex, which will represent infinite face
+        self.vertices = []
         self.next = {}
+        self.head = {}
                 
+    def rev(self, dart_id): return dart_id ^ 1
+    
+    def edge(self, dart_id): return dart_id >> 1
+    
     def process_cell(self, cell):
         '''cell is a polygon
         '''
@@ -68,7 +73,7 @@ class EGraph:
         pts = list(cell.exterior.coords)[:-1] #omit last pt, which equals first
         _remove_redundant(pts) #first get rid of redundant pts
         for i in range(len(pts)):
-            new_id = self.__new_segment_helper(pts[i], pts[(i+1)%len(pts)], -1) #access last vertex
+            new_id = self.__new_segment_helper(pts[i], pts[(i+1)%len(pts)])
             if i==0:
                 first_id = new_id
             else:
@@ -76,17 +81,18 @@ class EGraph:
             prev_id = new_id
         self.next[new_id] = first_id
     
-    def __new_segment_helper(self, pt0, pt1, vertex_id):
+    def __new_segment_helper(self, pt0, pt1):
             segment = pt0, pt1
             self.segmentmapper.add_segment(segment)
+            vertex_id = len(self.vertices)-1 #last entry in vertices table
             new_id = self.segmentmapper.segment2id[segment]
+            self.head[new_id] = vertex_id
             self.vertices[vertex_id].append(new_id)
             return new_id
 
     def find_outer(self):
         '''After cells have been processed, those segments not appearing twice
-        form the boundary of the infinite region.
-        vertex id of infinite region is last vertex id'''
+        form the boundary of the infinite region.'''
         #Among the reverses of segments that do appear, which ones do not appear?
         outer_segments = [swap(segment) for segment in self.segmentmapper.get_segments() if swap(segment) not in self.segmentmapper.get_segments()]
         #Among those, map first points to second points
@@ -94,16 +100,17 @@ class EGraph:
         #Now form the cycle.
         initial_point = outer_segments[0][0]
         pt0 = initial_point
-        vertex_number = self.num_vertices()
         self.vertices.append([])
         while True:
             pt1 = start2end[pt0]
-            new_id = self.__new_segment_helper(pt0, pt1, 0) #access vertex 0
+            new_id = self.__new_segment_helper(pt0, pt1)
             if pt1 == initial_point:
                 break
             pt0 = pt1
 
     def next(self, id): return self.next[id]
+
+    def incoming(self, vertex_id): return self.vertices[vertex_id]
 
     def id2segment(self, id): return self.segentmapper.get_segment(id)
 
@@ -111,12 +118,22 @@ class EGraph:
 
     def num_darts(self): return len(self.next)
             
+
+#    def dual(self):
+#        G = Egraph()
+#        for dart in range(self.num_darts()):
+#            G.next[dart] =
+
+
+
+
 '''
 import build_dp_graph
 from Voronoi_boundaries import *
 C_3D, A, assign_pairs, box = Parse("test_assignment.txt")
-proj_regions = power_cells(C_3D, box)
-#
-#G = build_dp_graph.EGraph()
-#for poly in proj_regions: G.process_cell(poly)
+cellss = power_cells(C_3D, box)
+
+G = build_dp_graph.EGraph()
+for cell in cells: G.process_cell(cell)
+G.find_outer()
 '''    
