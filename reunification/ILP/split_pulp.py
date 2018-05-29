@@ -114,8 +114,7 @@ def pulp_assign(solver, input):
             m += c
 
     with timed("solving ILP"):
-        tmp = sys.stdout
-        sys.stdout = log
+        tmp, sys.stdout = sys.stdout, log
         m.solve(solver)
         sys.stdout = tmp
 
@@ -144,10 +143,7 @@ def check_assignment(splits, centers, assignment, discrepancy):
 
     assert set(centers.keys()).issubset(set(weights.keys()))
 
-    discrepancy2 = max(
-        abs(centers[c].wt - weights[c])
-        for c in centers
-    )
+    discrepancy2 = max(abs(centers[c].wt - weights[c]) for c in centers)
 
     assert discrepancy2 == discrepancy
 
@@ -159,14 +155,17 @@ if __name__ == "__main__":
         solver, in_filename, out_filename, log_filename = args
 
     except ValueError:
-        print(f"usage: {cmd} solver in_filename out_filename log_filename", file=sys.stderr)
+        print(
+            f"usage: {cmd} solver in_filename out_filename log_filename",
+            file=sys.stderr,
+        )
         sys.exit(-1)
 
     if solver == "-":
         solver = "gurobi"
 
-    if log_filename == '-':
-        log = sys.stderr if out_filename == '-' else sys.stdout
+    if log_filename == "-":
+        log = sys.stderr if out_filename == "-" else sys.stdout
     else:
         log = open(log_filename, "w")
 
@@ -186,4 +185,5 @@ if __name__ == "__main__":
         with open(out_filename, "w") as output:
             output_assignment(output)
 
-    log.close()
+    if log not in (sys.stderr, sys.stdout):
+        log.close()
