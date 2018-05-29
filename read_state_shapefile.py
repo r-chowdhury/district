@@ -24,3 +24,5 @@ def print_points(pts):
     for pt in pts:
         print(pt[0], pt[1])
     
+if __name__ == '__main__':
+    print_points(read())
