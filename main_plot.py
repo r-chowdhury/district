@@ -102,9 +102,6 @@ def Parse_census_assign(filename):
     for l in lines:
         s = l.split()
         # census_assign.append(int(s[1]))
-        if(int(s[0]) == 0):
-            print("AHAAHAA")
-            exit()
         census_assign[int(s[0])] = int(s[1])
         
         # print("Census "+s[0]+" assigned to "+s[1])
