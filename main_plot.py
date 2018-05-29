@@ -75,6 +75,43 @@ colors = [
     ]
 
 
+def Parse_census_boundary(filename):
+    if(filename == ""): return []
+    f = open(filename, "r")
+    lines = f.readlines()
+    census_boundary = []
+    for l in lines:
+        points = []
+        s = l.split()
+        for i in range(int(len(s)/2)):
+            x = float(s[2*i])
+            y = float(s[2*i+1])
+            points.append([x,y])
+        # print(points)
+        census_boundary.append(Polygon(points))
+        # print(type(census_boundary[-1]))
+    f.close()
+    return census_boundary
+
+def Parse_census_assign(filename):
+    if(filename == ""): return []
+    f = open(filename, "r")
+    lines = f.readlines()
+    census_assign = {}
+    i = 0
+    for l in lines:
+        s = l.split()
+        # census_assign.append(int(s[1]))
+        if(int(s[0]) == 0):
+            print("AHAAHAA")
+            exit()
+        census_assign[int(s[0])] = int(s[1])
+        
+        # print("Census "+s[0]+" assigned to "+s[1])
+    f.close()
+    return census_assign
+
+
 def PlotAllVoronoi(C, A, assignment, bounded_regions, bbox, output):
     f = open(output, "w")
     f.write(str(len(C))+" "+str(len(A))+"\n")
@@ -118,28 +155,8 @@ def plot_helperVoronoi_fromfile(input_filename, outputfile):
 #######################################################
 #######################################################
 
-    
-    
-def Parse_boundary(filename):
-    f = open(filename, "r")
-    lines = f.readlines()
-    boundaries = []
-    i = 0
-    points = []
-    for l in lines:
-        if l == "\n" :
-            boundaries.append(Polygon(points))
-            points = []
-            continue
-        s = l.split()
-        x = float(s[0])
-        y = float(s[1])
-        points.append([x,y])
-    boundaries.append(Polygon(points))
-    f.close()
-    return boundaries
-    
-def Parse(filename):
+
+def ParseGNUplot(filename):
     f = open(filename, "r")
     lines = f.readlines()
     s = lines[0].split()
@@ -185,11 +202,80 @@ def Parse(filename):
     f.close()
     return C,A,polygons,[[x_min,y_min],[x_max,y_max]]
 
+    
+def Parse_boundary(filename):
+    f = open(filename, "r")
+    lines = f.readlines()
+    boundaries = []
+    i = 0
+    points = []
+    for l in lines:
+        if l == "\n" :
+            boundaries.append(Polygon(points))
+            points = []
+            continue
+        s = l.split()
+        x = float(s[0])
+        y = float(s[1])
+        points.append([x,y])
+    boundaries.append(Polygon(points))
+    f.close()
+    return boundaries
+    
+def Parse(filename):
+    f = open(filename, "r")
+    lines = f.readlines()
+    s = lines[0].split()
+    nb_centers = int(s[0])
+    nb_clients = int(s[1])
+    x_min, y_min = (float("inf"),float("inf"))
+    x_max, y_max = (-float("inf"),-float("inf"))
+    
+        
+    C = []
+    for i in range(1, nb_centers+1):
+        s = lines[i].split()
+        x = float(s[0])
+        y = float(s[1])
+        color = s[2]
+        C.append([x,y,color])
+        x_max = max(x_max, x)
+        y_max = max(y_max, y)
+        x_min = min(x_min, x)
+        y_min = min(y_min, y)
+        
+
+    assign_pairs = {}
+    A = []
+    for i in range(nb_centers+1, nb_centers+nb_clients+1):
+        s = lines[i].split()
+        x = float(s[0])
+        y = float(s[1])
+        color = s[2]
+        A.append([x,y,color])
+        x_max = max(x_max, x)
+        y_max = max(y_max, y)
+        x_min = min(x_min, x)
+        y_min = min(y_min, y)
+
+    polygons = []
+    for i in range(nb_centers+nb_clients+1, len(lines)):
+        points_unsplit = lines[i].split()
+        points = [[float(points_unsplit[j].split(",")[0]),
+                       float(points_unsplit[j].split(",")[1])]
+                    for j in range(len(points_unsplit))]
+        polygons.append(Polygon(points))
+        # print(polygons[-1].exterior.xy)
+    f.close()
+    return C,A,polygons,[[x_min,y_min],[x_max,y_max]]
+
 
 def GNUplot_boundary(p,f):
     f.write("set object polygon from ")
     # print("________")
     # print(p.exterior.xy)
+    # print("________")
+    # print(p, p.is_empty)
     # print("________")
     x,y = p.exterior.xy
     for i in range(len(x)):
@@ -227,6 +313,24 @@ def GNUplot_polygon(p,f,color):
             f.write(" to ")
     f.write(" fc rgb 'black' lw 1.5\n")
 
+def GNUplot_boundary_census(p,f,color):
+    f.write("set object polygon from ")
+    x,y = p.exterior.xy
+    for i in range(len(x)):
+        f.write(str(x[i])+","+str(y[i]))
+        if i != len(x)-1:
+            f.write(" to ")
+    f.write(" fc rgb '"+color+"' fs solid lw 0.2\n")
+
+    f.write("set object polygon from ")
+    x,y = p.exterior.xy
+    for i in range(len(x)):
+        f.write(str(x[i])+","+str(y[i]))
+        if i != len(x)-1:
+            f.write(" to ")
+    f.write(" fc rgb 'black' lw 0.2\n")
+
+    
 def GNUplot_point(p,f):
     col = p[2]
     if p[2] in colors:
@@ -234,11 +338,9 @@ def GNUplot_point(p,f):
     f.write('set object circle at '+str(p[0])+","+str(p[1])+' radius char 0.2 fillcolor rgb "'+col+'"\n')
 
 def GNUplot(C, A, boundary, polygons, clipped,
-                bbox, outputfilename, print_p):
+            bbox, outputfilename,
+            boundary_census=[], boundary_census_assign=[]):
     f = open(outputfilename, "w")
-    if print_p:
-        for c in C+A:
-            GNUplot_point(c,f)
     for i in range(len(clipped)):
         GNUplot_nonclipped(clipped[i],f)
     for i in range(len(polygons)):
@@ -252,7 +354,13 @@ def GNUplot(C, A, boundary, polygons, clipped,
         # print("color", colors[i])
         GNUplot_polygon(pol, f, col)
     for i in range(len(boundary)):
+        if(boundary[i].is_empty): continue
         GNUplot_boundary(boundary[i],f)
+    if boundary_census_assign != [] and boundary_census != []:
+        for i in boundary_census_assign:
+            if(boundary_census[i].is_empty): continue
+            GNUplot_boundary_census(boundary_census[i], f,
+                                    colors[boundary_census_assign[i]])
     offset_x = 0.1*(bbox[1][0]-bbox[0][0])
     offset_y = 0.1*(bbox[1][1]-bbox[0][1])
     f.write("set xrange ["+str(bbox[0][0]-offset_x)+":"+str(bbox[1][0]+offset_x)+"]\n")
@@ -264,7 +372,6 @@ def GNUplot(C, A, boundary, polygons, clipped,
     f.write("plot x lc rgb 'white'\n")
     # f.write("pause -1\n")
     f.close()
-
 
 def get_approx_boundary(A):
     Ap = [[p[0],p[1]] for p in A]
@@ -287,19 +394,37 @@ def clip(polygons, boundary):
     #     print(p)
     return new_clipped
 
-
 def plot_helperGNUplot_fromfile(input_filename, boundary_filename,
-                                output_filename, print_points=False):
-    C_3D, A, polygons, bbox = Parse(input_filename)
+                                boundary_census_filename,
+                                census_assign_filename,
+                                output_filename):
+    C_3D, A, polygons, bbox = ParseGNUplot(input_filename)
+
     boundary = Parse_boundary(boundary_filename)
     clipped_polygons = clip(polygons, boundary)
+    
+    boundary_census = Parse_census_boundary(boundary_census_filename)
+    boundary_census_assign = Parse_census_assign(census_assign_filename)
     GNUplot(C_3D, A, boundary, clipped_polygons, polygons,
-            bbox, output_filename, print_points)
+            bbox, output_filename, 
+            boundary_census,
+            boundary_census_assign) #
+            
 
 def plot_helperGNUplot(C_3D, A, polygons, bbox, boundary_filename,
-                       output_filename, print_points=False):
+                       boundary_census_filename,
+                       census_assign_filename,
+                       output_filename):
     boundary = Parse_boundary(boundary_filename)
+
     clipped_polygons = clip(polygons, boundary)
+
+    boundary_census = Parse_census_boundary(boundary_census_filename)
+    boundary_census_assign = Parse_census_assign(census_assign_filename)
+
     GNUplot(C_3D, A, boundary, clipped_polygons, polygons,
-            bbox, output_filename, print_points)
+            bbox, output_filename,
+            boundary_census,
+            boundary_census_assign) #
+            
     

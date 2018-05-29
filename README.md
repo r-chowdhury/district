@@ -54,9 +54,9 @@ when it terminates, sends the output to standard out.
 Standard out should be piped into a file
 
 Next, use
-   python3 main_script.py <input filename> <state shape filename> <output filename>
+   python3 main_script.py <input filename> <state shape filename> <polygone boundary census filename>* <assignment of boundary census filename>* <output filename>
    where <input filename> is an output of the do_redistricting program, the <state shape filename>
-   is an output of the read_state_shapefile.py script and <output filename> is a gnuplot program.
+   is an output of the read_state_shapefile.py script and <output filename> is a gnuplot program. Arguments marked with * are optional. 
    It produces a file that 
    the client points, with colors reflecting the assignment to
    centers, and the boundaries of the convex polygons that form the

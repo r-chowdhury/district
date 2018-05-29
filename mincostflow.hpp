@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <limits>
 #include "types_cs2.h"
 #include "assignment.hpp"
 
