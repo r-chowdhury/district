@@ -282,7 +282,7 @@ def GNUplot_boundary(p,f):
         f.write(str(x[i])+","+str(y[i]))
         if i != len(x)-1:
             f.write(" to ")
-    f.write(" fc rgb 'black' lc rgb 'black' lw 2\n")
+    f.write(" fc rgb 'black' lc rgb 'black' lw 1\n")
 
 
 def GNUplot_nonclipped(p,f):
@@ -305,13 +305,13 @@ def GNUplot_polygon(p,f,color):
             f.write(" to ")
     f.write(" fc rgb '"+color+"' fs solid lw 1.5\n")
 
-    f.write("set object polygon from ")
-    x,y = p.exterior.xy
-    for i in range(len(x)):
-        f.write(str(x[i])+","+str(y[i]))
-        if i != len(x)-1:
-            f.write(" to ")
-    f.write(" fc rgb 'black' lw 1.5\n")
+    # f.write("set object polygon from ")
+    # x,y = p.exterior.xy
+    # for i in range(len(x)):
+    #     f.write(str(x[i])+","+str(y[i]))
+    #     if i != len(x)-1:
+    #         f.write(" to ")
+    # f.write(" fc rgb 'black' lw 1.5\n")
 
 def GNUplot_boundary_census(p,f,color):
     f.write("set object polygon from ")
@@ -322,13 +322,13 @@ def GNUplot_boundary_census(p,f,color):
             f.write(" to ")
     f.write(" fc rgb '"+color+"' fs solid lw 0.2\n")
 
-    f.write("set object polygon from ")
-    x,y = p.exterior.xy
-    for i in range(len(x)):
-        f.write(str(x[i])+","+str(y[i]))
-        if i != len(x)-1:
-            f.write(" to ")
-    f.write(" fc rgb 'black' lw 0.2\n")
+    # f.write("set object polygon from ")
+    # x,y = p.exterior.xy
+    # for i in range(len(x)):
+    #     f.write(str(x[i])+","+str(y[i]))
+    #     if i != len(x)-1:
+    #         f.write(" to ")
+    # f.write(" fc rgb 'black' lw 0.2\n")
 
     
 def GNUplot_point(p,f):
@@ -353,9 +353,9 @@ def GNUplot(C, A, boundary, polygons, clipped,
             continue
         # print("color", colors[i])
         GNUplot_polygon(pol, f, col)
-    for i in range(len(boundary)):
-        if(boundary[i].is_empty): continue
-        GNUplot_boundary(boundary[i],f)
+    # for i in range(len(boundary)):
+    #     if(boundary[i].is_empty): continue
+    #     GNUplot_boundary(boundary[i],f)
     if boundary_census_assign != [] and boundary_census != []:
         for i in boundary_census_assign:
             if(boundary_census[i].is_empty): continue
