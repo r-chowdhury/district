@@ -102,7 +102,7 @@ def Parse_census_assign(filename):
     f = open(filename, "r")
     lines = f.readlines()
     census_assign = {}
-    i = 0
+    # i = 0  # not used
     for l in lines:
         s = l.split()
         # census_assign.append(int(s[1]))
