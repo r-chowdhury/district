@@ -279,7 +279,7 @@ def GNUplot_boundary(p,f):
         f.write(str(x[i])+","+str(y[i]))
         if i != len(x)-1:
             f.write(" to ")
-    f.write(" fc rgb 'black' lc rgb 'black' lw 1\n")
+    f.write(" fc rgb 'black' lc rgb 'black' lw 0\n")
 
 
 def GNUplot_nonclipped(p,f):
@@ -289,7 +289,7 @@ def GNUplot_nonclipped(p,f):
         f.write(str(x[i])+","+str(y[i]))
         if i != len(x)-1:
             f.write(" to ")
-    f.write(" fc rgb 'light-grey' lw 1.5\n")
+    f.write(" fc rgb 'light-grey' lw 0\n")
     
 
     
@@ -300,7 +300,7 @@ def GNUplot_polygon(p,f,color):
         f.write(str(x[i])+","+str(y[i]))
         if i != len(x)-1:
             f.write(" to ")
-    f.write(" fc rgb '"+color+"' fs solid lw 1.5\n")
+    f.write(" fc rgb '"+color+"' fs solid lw 0\n")
 
     # f.write("set object polygon from ")
     # x,y = p.exterior.xy
