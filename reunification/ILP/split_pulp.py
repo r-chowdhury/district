@@ -62,16 +62,29 @@ def pulp_assign(solver, input):
 
     print_log("computing assignment using pulp, solver", solver)
 
-    solvers = {"gurobi": pulp.solvers.GUROBI, "glpk": pulp.solvers.GLPK}
+    solvers = {
+        "gurobi": pulp.solvers.GUROBI,
+        "glpk": pulp.solvers.GLPK,
+        "cbc": pulp.solvers.PULP_CBC_CMD,
+    }
 
     try:
         solver = solvers[solver]()
     except KeyError:
         print_log("error: unknown pulp solver", solver)
+        print_log("known solvers:", ", ".join(solvers.keys()))
+        print_log(
+            "available solvers:",
+            ", ".join(n for n, s in solvers.items() if s().available()),
+        )
         sys.exit(-1)
 
     if not solver.available():
         print_log("error: solver not available")
+        print_log(
+            "available solvers:",
+            ", ".join(n for n, s in solvers.items() if s().available()),
+        )
         sys.exit(-1)
 
     splits, centers, edges = input_boundary_districts(input)
