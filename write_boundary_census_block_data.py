@@ -53,7 +53,8 @@ def go(shapefilename, redistrict_assignment_filename, outfilename):
                 if len(districts) >= 2:
                     fout.write(str(counter)+" ")
                     for district,subpop in zip(districts,subpops):
-                        fout.write(str(district)+" "+str(subpop)+" ")
+                        area = census_block.intersection(cells[district]).area
+                        fout.write(str(district)+" "+str(subpop)+" "+str(area)+" ")
                     fout.write("\n")
                 else:
                    #see if census block intersects the boundary between districts
