@@ -27,29 +27,40 @@ def input_boundary_districts(input):
     class Node:
 
         def __init__(self):
-            self.wt = 0
+            self.pop = 0
+            self.area = 0
             self.nbrs = []
 
         def add_nbr(self, *others):
             self.nbrs.extend(others)
 
-    centers = defaultdict(lambda: Node())
-    splits = defaultdict(lambda: Node())
+    class Edge:
+
+        def __init__(self):
+            self.pop = 0
+            self.area = 0
+
+    districts = defaultdict(lambda: Node())
+    blocks = defaultdict(lambda: Node())
+    edges = defaultdict(lambda: Edge())
 
     for line in input:
         if line.strip():
-            line = [int(x) for x in line.split()]
-            assert len(line) % 2 == 1
-            s, *line = line
-            for c, n in (line[2 * i : 2 * i + 2] for i in range(int(len(line) / 2))):
-                splits[s].wt += n
-                centers[c].wt += n
-                splits[s].add_nbr(c)
-                centers[c].add_nbr(s)
+            line = [eval(x) for x in line.split()]
+            # if len(line) % 3 != 1: continue
+            assert len(line) % 3 == 1, line
+            b, *line = line
+            for d, pop, area in (
+                line[3 * i : 3 * (i + 1)] for i in range(int(len(line) / 3))
+            ):
+                assert (b, d) not in edges
+                blocks[b].add_nbr(d)
+                districts[d].add_nbr(b)
+                for x in blocks[b], districts[d], edges[b, d]:
+                    x.pop += pop
+                    x.area += area
 
-    edges = [(s, c) for s in splits for c in splits[s].nbrs]
-
-    return splits, centers, edges
+    return blocks, districts, edges
 
 
 def pulp_assign(solver, input):
@@ -62,50 +73,81 @@ def pulp_assign(solver, input):
 
     print_log("computing assignment using pulp, solver", solver)
 
-    solvers = {"gurobi": pulp.solvers.GUROBI, "glpk": pulp.solvers.GLPK}
+    solvers = {
+        "gurobi": pulp.solvers.GUROBI,
+        "glpk": pulp.solvers.GLPK,
+        "cbc": pulp.solvers.PULP_CBC_CMD,
+    }
 
     try:
         solver = solvers[solver]()
     except KeyError:
         print_log("error: unknown pulp solver", solver)
+        print_log("known solvers:", ", ".join(solvers.keys()))
+        print_log(
+            "available solvers:",
+            ", ".join(n for n, s in solvers.items() if s().available()),
+        )
         sys.exit(-1)
 
     if not solver.available():
         print_log("error: solver not available")
+        print_log(
+            "available solvers:",
+            ", ".join(n for n, s in solvers.items() if s().available()),
+        )
         sys.exit(-1)
 
-    splits, centers, edges = input_boundary_districts(input)
+    blocks, districts, edges = input_boundary_districts(input)
 
     constraints = []
 
     value = pulp.LpVariable("value")
+    max_discrepancy = pulp.LpVariable("max_discrepancy")
+    refugee_blocks = pulp.LpVariable("refugee_blocks")
     assignments = pulp.LpVariable.dicts(
-        "a", edges, lowBound=0, upBound=1, cat=pulp.LpInteger
+        "a", edges.keys(), lowBound=0, upBound=1, cat=pulp.LpInteger
     )
-    discrepancies = pulp.LpVariable.dict("d", centers)
+    discrepancies = pulp.LpVariable.dict("d", districts)
 
     with timed("building split constraints"):
         # assign each split to one center
-        for s in splits:
-            constraints.append(sum(assignments[s, c] for c in splits[s].nbrs) == 1)
+        for b in blocks:
+            constraints.append(sum(assignments[b, d] for d in blocks[b].nbrs) == 1)
 
     with timed("building discrepancy constraints"):
         # discrepancy of each center
-        for c in centers:
+        for d in districts:
 
-            constraints.extend(
-                [
-                    -discrepancies[c]
-                    + centers[c].wt
-                    - pulp.lpSum(
-                        splits[s].wt * assignments[s, c] for s in centers[c].nbrs
-                    )
-                    == 0,
-                    # max discrepancy
-                    value - discrepancies[c] >= 0,
-                    value + discrepancies[c] >= 0,
-                ]
-            )
+            constraints.extend([
+                -discrepancies[d]
+                + districts[d].pop
+                - pulp.lpSum(
+                    blocks[b].pop * assignments[b, d] for b in districts[d].nbrs
+                )
+                == 0,
+                # max discrepancy
+                max_discrepancy - discrepancies[d] >= 0,
+                max_discrepancy + discrepancies[d] >= 0,
+            ])
+
+    with timed("building refugee_blocks constraint"):
+        preferred_districts = {}
+        for b in blocks:
+            d = max(blocks[b].nbrs, key=lambda d: edges[b, d].area)
+            if edges[b, d].area >= 0.666 * blocks[b].area:
+                preferred_districts[b] = d
+
+        constraints.extend([
+            refugee_blocks
+            == pulp.lpSum(
+                assignments[b, d]
+                for (b, d) in edges
+                if b in preferred_districts and preferred_districts[b] != d
+            ),
+            # ILP objective
+            value == max_discrepancy + 1.0 * refugee_blocks,
+        ])
 
     with timed("building ILP"):
         m = pulp.LpProblem("m", pulp.LpMinimize)
@@ -115,35 +157,37 @@ def pulp_assign(solver, input):
 
     with timed("solving ILP"):
         tmp, sys.stdout = sys.stdout, log
-        m.solve(solver)
-        sys.stdout = tmp
+        try:
+            m.solve(solver)
+        finally:
+            sys.stdout = tmp
 
-    discrepancy = value.value()
-
-    print_log("max discrepancy", discrepancy)
+    print_log("max discrepancy:", max_discrepancy.value())
+    print_log(f"number of refugee blocks: {refugee_blocks.value()}"
+              f"(of {len(preferred_districts)} with preferred_districts)")
 
     assignment = {}
 
-    for s in sorted(splits):
-        c = [c for c in splits[s].nbrs if assignments[s, c].value() == 1]
-        assert len(c) == 1
-        assignment[s] = c[0]
+    for b in sorted(blocks):
+        d = [d for d in blocks[b].nbrs if assignments[b, d].value() == 1]
+        assert len(d) == 1
+        assignment[b] = d[0]
 
-    check_assignment(splits, centers, assignment, discrepancy)
+    check_assignment(blocks, districts, assignment, max_discrepancy.value())
 
     return assignment
 
 
-def check_assignment(splits, centers, assignment, discrepancy):
-    assert set(splits.keys()) == set(assignment.keys())
+def check_assignment(blocks, districts, assignment, discrepancy):
+    assert set(blocks.keys()) == set(assignment.keys())
 
-    weights = defaultdict(lambda: 0)
-    for s in splits:
-        weights[assignment[s]] += splits[s].wt
+    pops = defaultdict(lambda: 0)
+    for b in blocks:
+        pops[assignment[b]] += blocks[b].pop
 
-    assert set(centers.keys()).issubset(set(weights.keys()))
+    assert set(districts.keys()).issubset(set(pops.keys()))
 
-    discrepancy2 = max(abs(centers[c].wt - weights[c]) for c in centers)
+    discrepancy2 = max(abs(districts[d].pop - pops[d]) for d in districts)
 
     assert discrepancy2 == discrepancy
 
@@ -176,8 +220,8 @@ if __name__ == "__main__":
             assignment = pulp_assign(solver, input)
 
     def output_assignment(output):
-        for s in sorted(assignment.keys()):
-            print(s, assignment[s], file=output)
+        for b in sorted(assignment.keys()):
+            print(b, assignment[b], file=output)
 
     if out_filename == "-":
         output_assignment(sys.stdout)
