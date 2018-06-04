@@ -67,6 +67,12 @@ def input_boundary_districts(input):
                 if dependee_block != b:
                     dependencies.add(((b, d), (dependee_block, d)))
 
+    dependencies = [((b1, d1), (b2, d2))
+                    for ((b1, d1), (b2, d2)) in dependencies
+                    if b2 in blocks]
+
+    assert all((b2, d2) in edges for (_, (b2, d2)) in dependencies)
+
     return blocks, districts, edges, dependencies
 
 
