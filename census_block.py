@@ -24,7 +24,7 @@ class Census_Block:
             self.centroid_cache = self.polygon.centroid
         return self.centroid_cache
 
-def generator(shapefilename):
+def gen(shapefilename):
     sf = shapefile.Reader(shapefilename)
     counter = 0
     for shape_rec in sf.iterShapeRecords():

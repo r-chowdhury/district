@@ -7,8 +7,9 @@ def distsq(center3d, pt2d):
     y = center3d[1] - pt2d.y
     return x*x + y*y + center3d[2]*center3d[2]
 
-def generator(census_block_generator, C_3D):
+def gen(census_block_generator, C_3D):
     for block in census_block_generator:
+        #print("closest") #for debugging
         centroid = block.centroid
         j = min((i for i in range(len(C_3D))), key=lambda i:distsq(C_3D[i], centroid))
         yield block, j

@@ -7,8 +7,14 @@
 from embedded_graph import EGraph
 from shapely.geometry import LineString #, shape?
 
-def generator(census_block_plus_district_ID_collection, district_graph):
+class Relevant_District_Item:
+    def __init__(self, ID):
+        self.ID = ID
+
+
+def gen(census_block_plus_district_ID_collection, district_graph):
     for census_block, district_ID in census_block_plus_district_ID_collection:
+        #print("relevant districts") #for debugging
         #district_ID is ID of corresponding vertex in district_graph
         relevant_districts = {district_ID}
         neighboring_darts = district_graph.vertices[district_ID]
@@ -18,7 +24,7 @@ def generator(census_block_plus_district_ID_collection, district_graph):
                 neighbor = district_graph.head[district_graph.rev(d)]
                 if neighbor < district_graph.num_vertices()-1: #if correspondings to a finite cell
                     relevant_districts.add(neighbor)
-        yield census_block, list(relevant_districts)
+        yield census_block, [Relevant_District_Item(i) for i in relevant_districts]
 
 '''
 def find(iterator_maker):
