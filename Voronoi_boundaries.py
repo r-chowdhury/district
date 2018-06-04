@@ -33,10 +33,11 @@ def Parse(filename):
     j = 0
     for i in range(nb_centers+1, nb_centers+nb_clients+1):
         s = lines[i].split()
-        x = float(s[0])
-        y = float(s[1])
+        id = int(s.pop(0))
+        x = float(s.pop(0))
+        y = float(s.pop(0))
         A.append([x,y])
-        assign_pairs[j] = int(s[2])
+        assign_pairs[j] = int(s.pop(0))
         j+=1
         x_max = max(x_max, x)
         y_max = max(y_max, y)
@@ -44,6 +45,11 @@ def Parse(filename):
         y_min = min(y_min, y)
     f.close()
     return C,A,assign_pairs, [[x_min,y_min,z_min],[x_max,y_max,z_max]]
+
+def find_bbox(C_3D):
+    max_pt = [max(pt[i] for pt in C_3D) for i in range(3)]
+    min_pt = [min(pt[i] for pt in C_3D) for i in range(3)]
+    return min_pt, max_pt
 
 def find_extent(bbox):
     minpt, maxpt = bbox
