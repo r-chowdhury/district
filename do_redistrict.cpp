@@ -9,12 +9,15 @@ int main(int argc, char *argv[]){
   int num_centers = atoi(argv[1]);
   //  string client_filename = argv[2];
   std::ifstream inf(argv[2]);
+  vector<long> client_IDs;
   vector<Point> clients;
   vector<long> populations_vec;
+  long ID;
   double x, y;
   int population;
-  while (inf >> x >> y >> population){
+  while (inf >> ID >> x >> y >> population){
     if (population > 0){
+      client_IDs.push_back(ID);
       clients.push_back(Point(x,y));
       populations_vec.push_back(population);
     }
@@ -24,5 +27,5 @@ int main(int argc, char *argv[]){
     cout << "FAILURE TO CONVERGE\n";
     return -1;
   }
-  print_out(centers, weights, clients, assignment);
+  print_out(centers, weights, client_IDs, clients, assignment);
 }

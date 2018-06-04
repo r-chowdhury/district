@@ -16,5 +16,5 @@
     .
     <client x> <client y> <center id> <subpopulation> <center id> <subpopulation> ... <center id> <subpopulation>
  */
-void print_out(const std::vector<Point> centers, const std::vector<double> &weights, const std::vector<Point> &clients,
+void print_out(const std::vector<Point> centers, const std::vector<double> &weights, const std::vector<long> &client_IDs, const std::vector<Point> &clients,
                const Assignment &assignment);
