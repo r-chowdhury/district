@@ -52,11 +52,11 @@ def input_boundary_districts(input):
         # If there is no dependee, the value of <dependee> will be the block ID of the current block.
         if line.strip():
             line = [eval(x) for x in line.split()]
-            # if len(line) % 3 != 1: continue
-            assert len(line) % 4 == 1, line
+            n_per_block = 4
+            assert len(line) % n_per_block == 1, line
             b, *line = line
             for d, pop, area, dependee_block in (
-                line[3 * i : 3 * (i + 1)] for i in range(int(len(line) / 3))
+                line[n_per_block * i : n_per_block * (i + 1)] for i in range(int(len(line) / n_per_block))
             ):
                 assert (b, d) not in edges
                 blocks[b].add_nbr(d)
@@ -65,7 +65,7 @@ def input_boundary_districts(input):
                     x.pop += pop
                     x.area += area
                 if dependee_block != b:
-                    dependencies.add(((b, d), (dependee_block, d)))
+                    dependencies.append(((b, d), (dependee_block, d)))
 
     dependencies = [((b1, d1), (b2, d2))
                     for ((b1, d1), (b2, d2)) in dependencies
