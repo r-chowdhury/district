@@ -43,14 +43,19 @@ def input_boundary_districts(input):
     districts = defaultdict(lambda: Node())
     blocks = defaultdict(lambda: Node())
     edges = defaultdict(lambda: Edge())
+    dependencies = []
 
     for line in input:
+        # <block ID> (<center/district ID> <population> <area of intersection> <dependee>)*
+        # where <dependee> is the block ID of another block if assigning the current block
+        # to a given center requires that the other block also be assigned to that center.
+        # If there is no dependee, the value of <dependee> will be the block ID of the current block.
         if line.strip():
             line = [eval(x) for x in line.split()]
             # if len(line) % 3 != 1: continue
-            assert len(line) % 3 == 1, line
+            assert len(line) % 4 == 1, line
             b, *line = line
-            for d, pop, area in (
+            for d, pop, area, dependee_block in (
                 line[3 * i : 3 * (i + 1)] for i in range(int(len(line) / 3))
             ):
                 assert (b, d) not in edges
@@ -59,8 +64,10 @@ def input_boundary_districts(input):
                 for x in blocks[b], districts[d], edges[b, d]:
                     x.pop += pop
                     x.area += area
+                if dependee_block != b:
+                    dependencies.add(((b, d), (dependee_block, d)))
 
-    return blocks, districts, edges
+    return blocks, districts, edges, dependencies
 
 
 def pulp_assign(solver, input):
@@ -98,7 +105,7 @@ def pulp_assign(solver, input):
         )
         sys.exit(-1)
 
-    blocks, districts, edges = input_boundary_districts(input)
+    blocks, districts, edges, dependencies = input_boundary_districts(input)
 
     constraints = []
 
@@ -148,6 +155,12 @@ def pulp_assign(solver, input):
             # ILP objective
             value == max_discrepancy + 1.0 * refugee_blocks,
         ])
+
+    with timed("building dependency constraints"):
+        constraints.extend(
+            assignments[b, d1] <= assignments[dependee_block, d2]
+            for ((b, d1), (dependee_block, d2)) in dependencies
+        )
 
     with timed("building ILP"):
         m = pulp.LpProblem("m", pulp.LpMinimize)
