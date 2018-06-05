@@ -42,7 +42,10 @@ assignment_file = open(assignment_filename)
 k, n = [int(x) for x in assignment_file.readline().split()]
 C_3D = [tuple(float(x) for x in assignment_file.readline().split()) for _ in range(k)]
 fout = open(output_filename, 'w')
+counter = 0
 for census_block, relevant_district_items in gen(shapefilename, assignment_filename, C_3D):
+    if counter % 10000 == 0: print("counter", counter)
+    counter = counter + 1
     fout.write(str(census_block.ID)+" ")
     for item in relevant_district_items:   #district, area, dependent in zip(relevant_districts, areas, dependents):
         for value in [item.ID, item.population, item.area, item.dependee]:
