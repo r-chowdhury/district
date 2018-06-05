@@ -311,7 +311,8 @@ def GNUplot_polygon(p, f, color):
         f.write(str(x[i]) + "," + str(y[i]))
         if i != len(x) - 1:
             f.write(" to ")
-    f.write(" fc rgb '" + color + "' fs solid lw 0\n")
+    # f.write(" fc rgb '" + color + "' fs solid lw 0\n")
+    f.write(" fc rgb '" + color + "' lw 0.02\n")  # alpha -neal
 
     # f.write("set object polygon from ")
     # x,y = p.exterior.xy
@@ -329,7 +330,8 @@ def GNUplot_boundary_census(p, f, color):
         f.write(str(x[i]) + "," + str(y[i]))
         if i != len(x) - 1:
             f.write(" to ")
-    f.write(" fc rgb '" + color + "' fs solid lw 0.2\n")
+    # f.write(" fc rgb '" + color + "' fs solid lw 0.2\n")
+    f.write(" fc rgb '" + color + "' lw 0.02\n")  # alpha -neal
 
     # f.write("set object polygon from ")
     # x,y = p.exterior.xy
@@ -367,6 +369,7 @@ def GNUplot(
     boundary_census_assign=[],
 ):
     f = open(outputfilename, "w")
+    f.write("set style fill transparent solid 0.4 noborder\n")  # alpha - Neal
     for i in range(len(clipped)):
         GNUplot_nonclipped(clipped[i], f)
     for i in range(len(polygons)):
@@ -402,7 +405,6 @@ def GNUplot(
         + "]\n"
     )
     f.write("set key off\n")
-    f.write("set style fill transparent solid 0.5 noborder\n")  # alpha - Neal
     f.write("set terminal pdf enhanced\n")
     f.write("set output '" + outputfilename + ".pdf'\n")
     f.write("set size square\n")
