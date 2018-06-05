@@ -148,7 +148,8 @@ def pulp_assign(solver, input):
         preferred_districts = {}
         for b in blocks:
             d = max(blocks[b].nbrs, key=lambda d: edges[b, d].area)
-            if edges[b, d].area >= 0.666 * blocks[b].area:
+            # if edges[b, d].area >= 0.666 * blocks[b].area:
+            if edges[b, d].area >= 0.95 * blocks[b].area:
                 preferred_districts[b] = d
 
         constraints.extend([
@@ -160,7 +161,17 @@ def pulp_assign(solver, input):
             ),
             # ILP objective
             value == max_discrepancy + 1.0 * refugee_blocks,
+            # max_discrepancy == 0
         ])
+
+    # dependee_block_districts = defaultdict(lambda: set())
+    # for (_, (dependee_block, d)) in dependencies:
+    #     dependee_block_districts[dependee_block].add(d)
+
+    # for b, ds in dependee_block_districts:
+    #     if len(ds) == 1:
+    #         d, = ds
+    #         constraints.add(assignments[b, d] == 1)
 
     with timed("building dependency constraints"):
         constraints.extend(
