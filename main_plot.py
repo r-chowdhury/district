@@ -402,6 +402,7 @@ def GNUplot(
         + "]\n"
     )
     f.write("set key off\n")
+    f.write("set style fill transparent solid 0.5 noborder\n")  # alpha - Neal
     f.write("set terminal pdf enhanced\n")
     f.write("set output '" + outputfilename + ".pdf'\n")
     f.write("set size square\n")
