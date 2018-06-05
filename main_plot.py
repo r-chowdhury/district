@@ -369,7 +369,7 @@ def GNUplot(
     boundary_census_assign=[],
 ):
     f = open(outputfilename, "w")
-    f.write("set style fill transparent solid 0.4 noborder\n")  # alpha - Neal
+    f.write("set style fill transparent solid 0.4\n")  # alpha - Neal
     for i in range(len(clipped)):
         GNUplot_nonclipped(clipped[i], f)
     for i in range(len(polygons)):
