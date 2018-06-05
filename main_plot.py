@@ -4,6 +4,8 @@
 # import scipy.spatial as sp
 import shapely.geometry as sg
 from shapely.geometry.polygon import Polygon
+import state_shape
+import census_block
 
 # from matplotlib import colors as mcolors
 import Voronoi_boundaries as vb
@@ -361,7 +363,7 @@ def GNUplot(
     clipped,
     bbox,
     outputfilename,
-    boundary_census=[],
+    boundary_census_shapefile_name,
     boundary_census_assign=[],
 ):
     f = open(outputfilename, "w")
@@ -377,15 +379,11 @@ def GNUplot(
             continue
         # print("color", colors[i])
         GNUplot_polygon(pol, f, col)
-    # for i in range(len(boundary)):
-    #     if(boundary[i].is_empty): continue
-    #     GNUplot_boundary(boundary[i],f)
-    if boundary_census_assign != [] and boundary_census != []:
-        for i in boundary_census_assign:
-            if boundary_census[i].is_empty:
-                continue
+
+    for block in census_block.gen(boundary_census_shapefile_name):
+        if block.ID in boundary_census_assign:
             GNUplot_boundary_census(
-                boundary_census[i], f, colors[boundary_census_assign[i]]
+                block.polygon, f, colors[boundary_census_assign[block.ID]]
             )
     offset_x = 0.1 * (bbox[1][0] - bbox[0][0])
     offset_y = 0.1 * (bbox[1][1] - bbox[0][1])
@@ -437,17 +435,17 @@ def clip(polygons, boundary):
 
 def plot_helperGNUplot_fromfile(
     input_filename,
-    boundary_filename,
-    boundary_census_filename,
+    which_state,
+    boundary_shapefilename,
+    boundary_census_shapefile_name,
     census_assign_filename,
     output_filename,
 ):
     C_3D, A, polygons, bbox = ParseGNUplot(input_filename)
 
-    boundary = Parse_boundary(boundary_filename)
+    boundary = state_shape.read(which_state, boundary_shapefilename)
     clipped_polygons = clip(polygons, boundary)
 
-    boundary_census = Parse_census_boundary(boundary_census_filename)
     boundary_census_assign = Parse_census_assign(census_assign_filename)
     GNUplot(
         C_3D,
@@ -457,7 +455,7 @@ def plot_helperGNUplot_fromfile(
         polygons,
         bbox,
         output_filename,
-        boundary_census,
+        boundary_census_shapefile_name,
         boundary_census_assign,
     )  #
 
@@ -467,16 +465,16 @@ def plot_helperGNUplot(
     A,
     polygons,
     bbox,
-    boundary_filename,
-    boundary_census_filename,
+    which_state,
+    boundary_shapefilename,
+    boundary_census_shapefile_name,
     census_assign_filename,
     output_filename,
 ):
-    boundary = Parse_boundary(boundary_filename)
+    boundary = state_shape.read(which_state, boundary_shapefilename)
 
     clipped_polygons = clip(polygons, boundary)
 
-    boundary_census = Parse_census_boundary(boundary_census_filename)
     boundary_census_assign = Parse_census_assign(census_assign_filename)
 
     GNUplot(
@@ -487,6 +485,6 @@ def plot_helperGNUplot(
         polygons,
         bbox,
         output_filename,
-        boundary_census,
+        boundary_census_shapefile_name,
         boundary_census_assign,
     )  #

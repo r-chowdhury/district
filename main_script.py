@@ -12,9 +12,10 @@ import Voronoi_boundaries as vb
 import main_plot as mplot
 
 if __name__ == "__main__":
-    if len(sys.argv) == 6:
-        C_3D, A, assign_pairs, bbox = vb.Parse(sys.argv[1])
-        power_cells = vb.power_cells_fromfile(sys.argv[1])
+    if len(sys.argv) == 7:
+        state_abbreviation = sys.argv[1]
+        C_3D, A, assign_pairs, bbox = vb.Parse(sys.argv[2])
+        power_cells = vb.power_cells_fromfile(sys.argv[2])
         # mplot.plot_helperVoronoi(C_3D, A, assign_pairs, bbox,
         #                          sys.argv[5]+"voronoi")
         mplot.plot_helperGNUplot(
@@ -22,10 +23,11 @@ if __name__ == "__main__":
             A,
             power_cells,
             bbox,
-            sys.argv[2],
+            state_abbreviation,
             sys.argv[3],
             sys.argv[4],
             sys.argv[5],
+            sys.argv[6],
         )
     elif len(sys.argv) == 4:
         C_3D, A, assign_pairs, bbox = vb.Parse(sys.argv[1])
@@ -39,7 +41,7 @@ if __name__ == "__main__":
         print(
             "Use: python3 ",
             sys.argv[0],
-            "[output redistrict.c++ filename] [state shape file name] [polygons_boundary_census_block_filename] [assignment_boundary_census_block_filename] [output file name]",
+            "[STATE ABBREV] [output redistrict.c++ filename] [state shape file name] [polygons_boundary_census_block_filename] [assignment_boundary_census_block_filename] [output file name]",
         )
         exit(-1)
 
