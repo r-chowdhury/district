@@ -1,22 +1,15 @@
-import Voronoi_boundaries
 import census_block
 import closest
-import embedded_graph
 import relevant_districts
-import census_block_dependents
 import areas_of_intersection
 import initial_population_assignment
+import district_graph
+import block_bfs
 import join
 import sys
 
-def gen(shapefilename, assignment_filename, C_3D):
-    G = embedded_graph.EGraph()
-    bbox = Voronoi_boundaries.find_bbox(C_3D)
-    cells = Voronoi_boundaries.power_cells(C_3D, bbox)
-    for cell in cells:
-        G.process_cell(cell, True) #get rid of extraneous points
-    G.find_outer()
-    centers_2D = [(x,y) for x,y,z in C_3D]
+def gen(shapefilename, assignment_filename):
+    G, cells, C_3D = district_graph.get(assignment_filename)
     def merge(x,y):
         relevant_district_items = y[1]
         district2pop = x[1]
@@ -26,24 +19,29 @@ def gen(shapefilename, assignment_filename, C_3D):
     closest_it = closest.gen(census_block.gen(shapefilename), C_3D)
     relevant_it = relevant_districts.gen(closest_it, G)
     areas_it = areas_of_intersection.gen(relevant_it, cells)
-    dependents_it = census_block_dependents.gen(areas_it, centers_2D)
-    it = join.gen(merge, initial_population_assignment.gen(assignment_filename), lambda x:x[0], dependents_it, lambda x:x[0].ID)
+    census_block_plus_collection = block_bfs.get(areas_it, len(cells))
+    # It might be a performance problem that the next statement materializes the whole dict
+    d = {block.ID:(block, rel) for block,rel in census_block_plus_collection}
+    for id, pop_assignment in initial_population_assignment.gen(assignment_filename):
+        if id in d:
+            for item in d[id][1]:
+                item.population = pop_assignment[item.ID] if item.ID in pop_assignment else 0
+            yield d[id]
+            
+    ####it = join.gen(merge, initial_population_assignment.gen(assignment_filename), lambda x:x[0], iter(census_block_plus_collection), lambda x:x[0].ID)
     #for x in join.gen(merge, initial_population_assignment.gen(assignment_filename), lambda x:x[0],
     #                      census_block_dependents.gen(areas_of_intersection.gen((relevant_districts.gen(closest.gen(census_block.gen(shapefilename), C_3D), G)), cells), centers_2D), lambda x:x[0].ID):
-    for x in it:
-        yield x
+#    for x in it:
+#        yield x
 
 
 args = sys.argv[1:]
 shapefilename = args.pop(0)
 assignment_filename = args.pop(0)
 output_filename = args.pop(0)
-assignment_file = open(assignment_filename)
-k, n = [int(x) for x in assignment_file.readline().split()]
-C_3D = [tuple(float(x) for x in assignment_file.readline().split()) for _ in range(k)]
 fout = open(output_filename, 'w')
 counter = 0
-for census_block, relevant_district_items in gen(shapefilename, assignment_filename, C_3D):
+for census_block, relevant_district_items in gen(shapefilename, assignment_filename):
     if counter % 10000 == 0: print("counter", counter)
     counter = counter + 1
     fout.write(str(census_block.ID)+" ")
