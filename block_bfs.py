@@ -49,7 +49,7 @@ def get(census_block_plus_collection, k):
                     w = G.head[outgoing_dart]
                     if w not in visited and w in relevant_vertices[i]:
                         visited.add(w)
-                        waiting.appendleft(w)x
+                        waiting.appendleft(w)
                         for item in vertex2block_plus[w][1]:
                             if item.ID == i:
                                 item.dependee = vertex2block_id[v]
