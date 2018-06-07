@@ -5,7 +5,7 @@
    output: sequence of pairs (census_block instance, list of IDs of districts the census block intersects)
 '''
 # from embedded_graph import EGraph
-from shapely.geometry import LineString  #, shape?
+from shapely.geometry import LineString  # , shape?
 
 
 class Relevant_District_Item:
