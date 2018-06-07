@@ -1,51 +1,81 @@
-'''
+"""
 Goal: for each census block and each district to which the census block could be assigned,
 find the neighboring census block that is closer to the center.
 
 Maybe an improvement would be to write to temporary file the blocks, organized by relevant district,
 and then read them in one by one so that the program doesn't use so much memory.
-'''
+"""
 from embedded_graph import EGraph
-from shapely.geometry import LineString, Point
+
+# from shapely.geometry import LineString, Point
 from collections import deque
 import pickle
 import time
-import deeper
+
+# import deeper
+
 
 def get(census_block_plus_collection, k):
     debugflag = True
     time_start = time.clock()
     G = EGraph()
     vertex2block_id = {}
-    relevant_vertices = [set() for _ in range(k)] # boundary vertices intersecting district i
+    relevant_vertices = [
+        set() for _ in range(k)
+    ]  # boundary vertices intersecting district i
     boundary_vertices = set()
-    vertex2block_plus = {} #maps a vertex to corresponding block and associated items
-    #create graph G of blocks,  assign them to relevant centers, identify boundary vertices, keep track of blocks of boundary vertices
+    vertex2block_plus = {}  # maps a vertex to corresponding block and associated items
+    # create graph G of blocks,  assign them to relevant centers, identify boundary vertices, keep track of blocks of boundary vertices
     counter = 0
     for block, relevant_district_items in census_block_plus_collection:
         if counter % 10000 == 0:
             print("block_bfs phase 1, counter ", counter)
-            pickle.dump([vertex2block_id,waiting,visited,G,vertex2block_plus,relevant_vertices,boundary_vertices], open("bfs.p","wb"))
+            pickle.dump(
+                [
+                    vertex2block_id,
+                    waiting,
+                    visited,
+                    G,
+                    vertex2block_plus,
+                    relevant_vertices,
+                    boundary_vertices,
+                ],
+                open("bfs.p", "wb"),
+            )
         counter = counter + 1
         v = G.num_vertices()
         vertex2block_id[v] = block.ID
-        G.process_cell(block.polygon) #new vertex ID is v  --- eliminate redundant vertices?  Maybe not.
-        if len(relevant_district_items) > 1: 
+        G.process_cell(
+            block.polygon
+        )  # new vertex ID is v  --- eliminate redundant vertices?  Maybe not.
+        if len(relevant_district_items) > 1:
             for item in relevant_district_items:
                 relevant_vertices[item.ID].add(v)
             boundary_vertices.add(v)
             vertex2block_plus[v] = block, relevant_district_items
     print("time for BFS first phase: ", time.clock() - time_start)
-    pickle.dump([vertex2block_id,waiting,visited,G,vertex2block_plus,relevant_vertices,boundary_vertices], open("bfs.p","wb"))
+    pickle.dump(
+        [
+            vertex2block_id,
+            waiting,
+            visited,
+            G,
+            vertex2block_plus,
+            relevant_vertices,
+            boundary_vertices,
+        ],
+        open("bfs.p", "wb"),
+    )
     time_start = time.clock()
-    #BFS to find parents/dependees for boundary blocks
+    # BFS to find parents/dependees for boundary blocks
     for i in range(k):
         print("**** block_bfs phase 2, district ", i)
         waiting = deque(v for v in relevant_vertices[i] if v not in boundary_vertices)
         visited = set(waiting)
         counter = 0
         while len(waiting) > 0:
-            if counter % 10000 == 0: print("block_bfs phase 2, counter ", counter)
+            if counter % 10000 == 0:
+                print("block_bfs phase 2, counter ", counter)
             counter = counter + 1
             v = waiting.pop()
             for incoming_dart in G.incoming(v):
@@ -59,17 +89,22 @@ def get(census_block_plus_collection, k):
                             if item.ID == i:
                                 item.dependee = vertex2block_id[v]
                                 break
-    #Check if, for each district i, the relevant vertices were reached by BFS
+        # Check if, for each district i, the relevant vertices were reached by BFS
         for v in relevant_vertices[i]:
             for item in vertex2block_plus[v][1]:
                 if item.ID == i and v not in visited:
-                    print("BFS did not visit vertex ",v," which corresponds to block ", vertex2block_plus[v][0].ID)
+                    print(
+                        "BFS did not visit vertex ",
+                        v,
+                        " which corresponds to block ",
+                        vertex2block_plus[v][0].ID,
+                    )
     print("time for BFS second phase: ", time.clock() - time_start)
-    #Now output the results
-    return vertex2block_plus.values() #indexed by boundary_vertices
+    # Now output the results
+    return vertex2block_plus.values()  # indexed by boundary_vertices
 
 
-'''
+"""
 import census_block
 import closest
 import relevant_districts
@@ -82,4 +117,4 @@ closest_it = closest.gen(census_block.gen(shapefilename), C_3D)
 relevant_it = relevant_districts.gen(closest_it, G)
 L = get(relevant_it, len(C_3D))
 print("here")
-'''
+"""
