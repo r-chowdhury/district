@@ -14,23 +14,19 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 
 Extract census blocks and populations
-  python3  read_census_blocks.py <input directory name> <output_filename>
-where <input directory name> contains shape file specifying census blocks, e.g.
+  python3  census_block.py <census block shape filename> <output_filename>
+where <census block shape filename> is name of shape file (not
+  including suffix) specifying census blocks, e.g.
           abblock010_44_pophu/tabblock2010_44_pophu
-which can be downloaded from https://www.census.gov/geo/maps-data/data/tiger-data.html
+The directory can be downloaded as a zip file from https://www.census.gov/geo/maps-data/data/tiger-data.html
 (Select Population & Housing Unit Counts -- Blocks, then select a state.)
 
 The output file written has one line per client point.
-It specifies the x coordinate (longitude), the y coordinate
+It specifies the ID number of the corresponding census block, the x coordinate (longitude), the y coordinate
 (latitude), and the population assigned to that point.
 The script selects the point to be the centroid of the census block
-shape.  (WHAT HAPPENS IF THE SHAPE CONSISTS OF MULTIPLE POLYGONS?)
-
-Also, extract the boundary polygons of a state:
-  python3 read_state_shapefile.py <ST> <input directory name>
- where <ST> is the two-letter abbreviation for a state, and <input directory name>
-is the name of a directory (not including suffix) giving shape records for
-  state boundaries, e.g. cb_2016_us_state_500k as downloaded from https://www.census.gov/geo/maps-data/data/cbf/cbf_state.html
+shape. (If a census block consists of multiple polygons, each polygon
+is treated separately, and the population is treated as zero.
 
 Next, compute the clustering using
    do_redistrict <k> <input_filename>
@@ -45,27 +41,39 @@ when it terminates, sends the output to standard out.
     .
     .
     <center x> <center y> <center z>
-    <client x> <client y> <center id> <subpopulation> <center id> <subpopulation> ... <center id> <subpopulation>
-    <client x> <client y> <center id> <subpopulation> <center id> <subpopulation> ... <center id> <subpopulation>
+    <census block ID> <client x> <client y> <center id> <subpopulation> <center id> <subpopulation> ... <center id> <subpopulation>
+    <census block ID> <client x> <client y> <center id> <subpopulation> <center id> <subpopulation> ... <center id> <subpopulation>
     .
     .
-    <client x> <client y> <center id> <subpopulation> <center id> <subpopulation> ... <center id> <subpopulation>
+    <census block ID> <client x> <client y> <center id> <subpopulation> <center id> <subpopulation> ... <center id> <subpopulation>
 
 Standard out should be piped into a file
 
-Next, use
-   python3 main_script.py <input filename> <state shape filename> <polygone boundary census filename>* <assignment of boundary census filename>* <output filename>
-   where <input filename> is an output of the do_redistricting program, the <state shape filename>
-   is an output of the read_state_shapefile.py script and <output filename> is a gnuplot program. Arguments marked with * are optional. 
-   It produces a file that 
-   the client points, with colors reflecting the assignment to
-   centers, and the boundaries of the convex polygons that form the
-   power diagram of the chosen centers.
+Next, compute a file for the ILP using
+  python3 prepare_ILP.py <census block shape filename>  <redistricting solution filename  > <outputfilename>
+where <census block shape filename> is as above, and <redistricting solution filename>
+is the output from do_redistrict.
+
+Next, run the ILP using
+   python3 reunification/ILP/split_pulp.py <ILP input> <output filename> <log filename>
+where <ILP input> is the result from prepare_ILP.py
 
 Next, use
-   gnuplot <input filename> to obtain a pdf file consisting of the
-   redistricting of the region, where <input filename> is the output of
-   the main_script script.
+   python3 main_script.py <state abbreviation> <redistricting filename> <state shape filename> [<census block shape filename> <census block assignment filename>] <output filename>
+   where
+      <state abbreviation> is the two-capital-letter abbreviation for the state (e.g. CA or RI),
+      <redistricting filename> is an output of the do_redistricting program,
+      <state shape filename> is a file in the directory downloaded from the Census Bureau giving the census blocks and their populations,
+      <census block assignment filename> is the output from the ILP solver, indicating how to assign census blocks to districts,
+      and <output filename> is a gnuplot program. 
+Square brackets [ ... ] indicate optional arguments.
+
+
+Next, use
+   gnuplot <filename> 
+to produce a pdf file consisting of the redistricting of the region,
+where <filename> is the name ofthe output file of main_script.
+The pdf file's name is the same as <filename> but with .pdf at the end.
 
 
 
