@@ -22,80 +22,86 @@ do_all_steps_AL: run_redistrict_AL run_prepare_ILP_AL run_ILP_AL generate_images
 run_redistrict_all: run_redistrict_AL run_redistrict_FL run_redistrict_IL run_redistrict_NY run_redistrict_TX run_redistrict_CA
 
 run_redistrict_AL:
-	./do_redistrict 7 AL_census > AL_do_redistrict
+	./do_redistrict 7 census_data/AL_census > cluster_data/AL_do_redistrict
 run_redistrict_FL:
-	./do_redistrict 27 FL_census > FL_do_redistrict
+	./do_redistrict 27 census_data/FL_census > cluster_data/FL_do_redistrict
 run_redistrict_IL:
-	./do_redistrict 18 IL_census > IL_do_redistrict
+	./do_redistrict 18 census_data/IL_census > cluster_data/IL_do_redistrict
 run_redistrict_NY:
-	./do_redistrict 27 NY_census > NY_do_redistrict
+	./do_redistrict 27 census_data/NY_census > cluster_data/NY_do_redistrict
 run_redistrict_CA:
-	./do_redistrict 53 CA_census > CA_do_redistrict
+	./do_redistrict 53 census_data/CA_census > cluster_data/CA_do_redistrict
 run_redistrict_TX:
-	./do_redistrict 36 TX_census > TX_do_redistrict
+	./do_redistrict 36 census_data/TX_census > cluster_data/TX_do_redistrict
 
 run_prepare_ILP_all: run_prepare_ILP_AL run_prepare_ILP_FL run_prepare_ILP_IL run_prepare_ILP_NY run_prepare_ILP_TX run_prepare_ILP_CA
 
 run_prepare_ILP_AL:
-	python3 prepare_ILP.py AL_census  AL_do_redistrict AL_input_ILP
+	python3 prepare_ILP.py census_data/AL_census  cluster_data/AL_do_redistrict ILP_data/AL_input_ILP
 run_prepare_ILP_FL:
-	python3 prepare_ILP.py FL_census  FL_do_redistrict FL_input_ILP
+	python3 prepare_ILP.py census_data/FL_census  cluster_data/FL_do_redistrict ILP_data/FL_input_ILP
 run_prepare_ILP_IL:
-	python3 prepare_ILP.py IL_census  IL_do_redistrict IL_input_ILP
+	python3 prepare_ILP.py census_data/IL_census  cluster_data/IL_do_redistrict ILP_data/IL_input_ILP
 run_prepare_ILP_NY:
-	python3 prepare_ILP.py NY_census  NY_do_redistrict NY_input_ILP
+	python3 prepare_ILP.py census_data/NY_census  cluster_data/NY_do_redistrict ILP_data/NY_input_ILP
 run_prepare_ILP_CA:
-	python3 prepare_ILP.py CA_census  CA_do_redistrict CA_input_ILP
+	python3 prepare_ILP.py census_data/CA_census  cluster_data/CA_do_redistrict ILP_data/CA_input_ILP
 run_prepare_ILP_TX:
-	python3 prepare_ILP.py TX_census  TX_do_redistrict TX_input_ILP
+	python3 prepare_ILP.py census_data/TX_census  cluster_data/TX_do_redistrict ILP_data/TX_input_ILP
 
 run_ILP_all: run_ILP_AL run_ILP_FL run_ILP_IL run_ILP_NY run_ILP_CA run_ILP_TX
 
 run_ILP_AL:
-	python3 reunification/ILP/split_pulp.py AL_input_ILP AL_output_ILP AL_log_ILP
+	python3 reunification/ILP/split_pulp.py ILP_data/AL_input_ILP ILP_data/AL_output_ILP ILP_data/AL_log_ILP
 run_ILP_FL:
-	python3 reunification/ILP/split_pulp.py FL_input_ILP FL_output_ILP FL_log_ILP
+	python3 reunification/ILP/split_pulp.py ILP_data/FL_input_ILP ILP_data/FL_output_ILP ILP_data/FL_log_ILP
 run_ILP_IL:
-	python3 reunification/ILP/split_pulp.py IL_input_ILP IL_output_ILP IL_log_ILP
+	python3 reunification/ILP/split_pulp.py ILP_data/IL_input_ILP ILP_data/IL_output_ILP ILP_data/IL_log_ILP
 run_ILP_NY:
-	python3 reunification/ILP/split_pulp.py NY_input_ILP NY_output_ILP NY_log_ILP
+	python3 reunification/ILP/split_pulp.py ILP_data/NY_input_ILP ILP_data/NY_output_ILP ILP_data/NY_log_ILP
 run_ILP_CA:
-	python3 reunification/ILP/split_pulp.py CA_input_ILP CA_output_ILP CA_log_ILP
+	python3 reunification/ILP/split_pulp.py ILP_data/CA_input_ILP ILP_data/CA_output_ILP ILP_data/CA_log_ILP
 run_ILP_TX:
-	python3 reunification/ILP/split_pulp.py TX_input_ILP TX_output_ILP TX_log_ILP
+	python3 reunification/ILP/split_pulp.py ILP_data/TX_input_ILP ILP_data/TX_output_ILP ILP_data/TX_log_ILP
 
 
 generate_images_all: generate_images_AL generate_images_FL generate_images_IL generate_images_NY generate_images_CA generate_images_TX
 
 generate_images_AL:
-	python3 main_script.py AL AL_do_redistrict AL_census AL_output_ILP AL_gnuplot
-	gnuplot	AL_gnuplot 
-	gnuplot	AL_gnuplot_noreunification
+	python3 main_script.py AL cluster_data/AL_do_redistrict shapestate_data/AL_shape census_data/AL_census ILP_data/AL_output_ILP gnuplot_data/AL_gnuplot
+	python3 main_script.py AL cluster_data/AL_do_redistrict shapestate_data/AL_shape gnuplot_data/AL_gnuplotnoreunification
+	gnuplot	gnuplot_data/AL_gnuplot 
+	gnuplot	gnuplot_data/AL_gnuplot_noreunification
 
 generate_images_FL:
-	python3 main_script.py FL FL_do_redistrict FL_census FL_output_ILP FL_gnuplot
-	gnuplot	FL_gnuplot 
-	gnuplot	FL_gnuplot_noreunification
+	python3 main_script.py FL cluster_data/FL_do_redistrict shapestate_data/FL_shape census_data/FL_census ILP_data/FL_output_ILP gnuplot_data/FL_gnuplot
+	python3 main_script.py FL cluster_data/FL_do_redistrict shapestate_data/FL_shape gnuplot_data/FL_gnuplotnoreunification
+	gnuplot	gnuplot_data/FL_gnuplot 
+	gnuplot	gnuplot_data/FL_gnuplot_noreunification
 
 generate_images_IL:
-	python3 main_script.py IL IL_do_redistrict IL_census IL_output_ILP IL_gnuplot
-	gnuplot	IL_gnuplot 
-	gnuplot	IL_gnuplot_noreunification
+	python3 main_script.py IL cluster_data/IL_do_redistrict shapestate_data/IL_shape census_data/IL_census ILP_data/IL_output_ILP gnuplot_data/IL_gnuplot
+	python3 main_script.py IL cluster_data/IL_do_redistrict shapestate_data/IL_shape gnuplot_data/IL_gnuplotnoreunification
+	gnuplot	gnuplot_data/IL_gnuplot 
+	gnuplot	gnuplot_data/IL_gnuplot_noreunification
 
 generate_images_NY:
-	python3 main_script.py NY NY_do_redistrict NY_census NY_output_ILP NY_gnuplot
-	gnuplot	NY_gnuplot 
-	gnuplot	NY_gnuplot_noreunification
+	python3 main_script.py NY cluster_data/NY_do_redistrict shapestate_data/NY_shape census_data/NY_census ILP_data/NY_output_ILP gnuplot_data/NY_gnuplot
+	python3 main_script.py NY cluster_data/NY_do_redistrict shapestate_data/NY_shape gnuplot_data/NY_gnuplotnoreunification
+	gnuplot	gnuplot_data/NY_gnuplot 
+	gnuplot	gnuplot_data/NY_gnuplot_noreunification
 
 generate_images_CA:
-	python3 main_script.py CA CA_do_redistrict CA_census CA_output_ILP CA_gnuplot
-	gnuplot	CA_gnuplot 
-	gnuplot	CA_gnuplot_noreunification
+	python3 main_script.py CA cluster_data/CA_do_redistrict  shapestate_data/CA_shape census_data/CA_census ILP_data/CA_output_ILP gnuplot_data/CA_gnuplot
+	python3 main_script.py CA cluster_data/CA_do_redistrict shapestate_data/CA_shape gnuplot_data/CA_gnuplotnoreunification
+	gnuplot	gnuplot_data/CA_gnuplot 
+	gnuplot	gnuplot_data/CA_gnuplot_noreunification
 
 generate_images_TX:
-	python3 main_script.py TX TX_do_redistrict TX_census TX_output_ILP TX_gnuplot
-	gnuplot	TX_gnuplot 
-	gnuplot	TX_gnuplot_noreunification
+	python3 main_script.py TX cluster_data/TX_do_redistrict shapestate_data/TX_shape census_data/TX_census ILP_data/TX_output_ILP gnuplot_data/TX_gnuplot
+	python3 main_script.py TX cluster_data/TX_do_redistrict shapestate_data/TX_shape gnuplot_data/TX_gnuplotnoreunification
+	gnuplot	gnuplot_data/TX_gnuplot 
+	gnuplot	gnuplot_data/TX_gnuplot_noreunification
 
 
 clean:
