@@ -35,9 +35,11 @@ def get(census_block_plus_collection, k):
         G.process_cell(
             block.polygon
         )  # new vertex ID is v  --- eliminate redundant vertices?  Maybe not.
+        for item in relevant_district_items:
+            relevant_vertices[item.ID].add(v)
+            item.dependee = block.ID # in case the vertex is not reached by BFS, set its dependee field to itself to indicate no true dependee
+            #maybe could have set dependee only for boundary blocks, i.e. those with multiple relevant district items.
         if len(relevant_district_items) > 1:
-            for item in relevant_district_items:
-                relevant_vertices[item.ID].add(v)
             boundary_vertices.add(v)
             vertex2block_plus[v] = block, relevant_district_items
     # BFS to find parents/dependees for boundary blocks
@@ -60,11 +62,6 @@ def get(census_block_plus_collection, k):
                             if item.ID == i:
                                 item.dependee = vertex2block_id[v]
                                 break
-        #Check if, for each district i, the relevant vertices were reached by BFS
-        for v in relevant_vertices[i]:
-            for item in vertex2block_plus[v][1]:
-                if item.ID == i and v not in visited:
-                    item.dependee = vertex2block_plus[v][0].ID # the block has no dependee, so assign its own ID
     #Now output the results
     return vertex2block_plus.values() #indexed by boundary_vertices
 
