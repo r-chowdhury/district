@@ -17,6 +17,21 @@ CPPFLAGS = -O3 -Wall -std=c++1z
 #CFLAGS = -O4 -DNDEBUG -DNO_ZERO_CYCLES
 BIN=cs2 do_redistrict test_initial_centers test_redistrict test_find_weights
 
+####
+# Expecting the following folders to exists
+# census_data containing the output of read_census
+# cluster_data (will contain output of do_redistrict)
+# ILP_data (will contain input for ILP after split_pulp and the output of
+# the ILP)
+# gnuplot_data (will contain output of python script for and the output of
+# the gnuplot procedure)
+# data/CA_census_blocks/tabblock2010_06_pophu for all states (with correct
+# two-letters ID and number)
+
+# command is make "command" STATE=<two-letters id>
+# in case of run_ILP expect additional argument SOLVER=<name of solver for
+# split_pulp>
+
 do_all_steps_AL: run_redistrict_AL run_prepare_ILP_AL run_ILP_AL generate_images_AL
 do_all_steps_FL: run_redistrict_FL run_prepare_ILP_FL run_ILP_FL generate_images_FL
 do_all_steps_IL: run_redistrict_IL run_prepare_ILP_IL run_ILP_IL generate_images_IL
