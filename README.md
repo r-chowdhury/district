@@ -25,8 +25,18 @@ The output file written has one line per client point.
 It specifies the ID number of the corresponding census block, the x coordinate (longitude), the y coordinate
 (latitude), and the population assigned to that point.
 The script selects the point to be the centroid of the census block
+
+shape.  (WHAT HAPPENS IF THE SHAPE CONSISTS OF MULTIPLE POLYGONS?)
+
+Also, extract the boundary polygons of a state:
+  python3 read_state_shapefile.py <ST> <input directory name>
+ where <ST> is the two-letter abbreviation for a state, and <input directory name>
+is the name of a directory (not including suffix) giving shape records for
+  state boundaries, e.g. cb_2016_us_state_500k as downloaded from clear
+
 shape. (If a census block consists of multiple polygons, each polygon
 is treated separately, and the population is treated as zero.
+
 
 Next, compute the clustering using
    do_redistrict <k> <input_filename>
