@@ -33,7 +33,7 @@ def Parse(filename):
     j = 0
     for i in range(nb_centers+1, nb_centers+nb_clients+1):
         s = lines[i].split()
-#        ids = int(s.pop(0))
+        ids = int(s.pop(0))
         x = float(s.pop(0))
         y = float(s.pop(0))
         A.append([x,y])

@@ -18,6 +18,13 @@ CPPFLAGS = -O3 -Wall -std=c++1z
 BIN=cs2 do_redistrict test_initial_centers test_redistrict test_find_weights
 
 do_all_steps_AL: run_redistrict_AL run_prepare_ILP_AL run_ILP_AL generate_images_AL
+do_all_steps_FL: run_redistrict_FL run_prepare_ILP_FL run_ILP_FL generate_images_FL
+do_all_steps_IL: run_redistrict_IL run_prepare_ILP_IL run_ILP_IL generate_images_IL
+do_all_steps_NY: run_redistrict_NY run_prepare_ILP_NY run_ILP_NY generate_images_NY
+do_all_steps_CA: run_redistrict_CA run_prepare_ILP_CA run_ILP_CA generate_images_CA
+do_all_steps_TX: run_redistrict_TX run_prepare_ILP_TX run_ILP_TX generate_images_TX
+
+run_redistrict : run_redistrict_$(STATE)
 
 run_redistrict_all: run_redistrict_AL run_redistrict_FL run_redistrict_IL run_redistrict_NY run_redistrict_TX run_redistrict_CA
 
@@ -36,36 +43,42 @@ run_redistrict_TX:
 
 run_prepare_ILP_all: run_prepare_ILP_AL run_prepare_ILP_FL run_prepare_ILP_IL run_prepare_ILP_NY run_prepare_ILP_TX run_prepare_ILP_CA
 
+run_prepare_ILP: run_prepare_ILP_$(STATE)
+
 run_prepare_ILP_AL:
-	python3 prepare_ILP.py census_data/AL_census  cluster_data/AL_do_redistrict ILP_data/AL_input_ILP
-run_prepare_ILP_FL:
-	python3 prepare_ILP.py census_data/FL_census  cluster_data/FL_do_redistrict ILP_data/FL_input_ILP
-run_prepare_ILP_IL:
-	python3 prepare_ILP.py census_data/IL_census  cluster_data/IL_do_redistrict ILP_data/IL_input_ILP
-run_prepare_ILP_NY:
-	python3 prepare_ILP.py census_data/NY_census  cluster_data/NY_do_redistrict ILP_data/NY_input_ILP
+	python3 prepare_ILP.py data/AL_census_blocks/tabblock2010_01_pophu  cluster_data/AL_do_redistrict ILP_data/AL_input_ILP
 run_prepare_ILP_CA:
-	python3 prepare_ILP.py census_data/CA_census  cluster_data/CA_do_redistrict ILP_data/CA_input_ILP
+	python3 prepare_ILP.py data/CA_census_blocks/tabblock2010_06_pophu  cluster_data/CA_do_redistrict ILP_data/CA_input_ILP
+run_prepare_ILP_FL:
+	python3 prepare_ILP.py data/FL_census_blocks/tabblock2010_12_pophu  cluster_data/FL_do_redistrict ILP_data/FL_input_ILP
+run_prepare_ILP_IL:
+	python3 prepare_ILP.py data/IL_census_blocks/tabblock2010_17_pophu  cluster_data/IL_do_redistrict ILP_data/IL_input_ILP
+run_prepare_ILP_NY:
+	python3 prepare_ILP.py data/NY_census_blocks/tabblock2010_36_pophu  cluster_data/NY_do_redistrict ILP_data/NY_input_ILP
 run_prepare_ILP_TX:
-	python3 prepare_ILP.py census_data/TX_census  cluster_data/TX_do_redistrict ILP_data/TX_input_ILP
+	python3 prepare_ILP.py data/TX_census_blocks/tabblock2010_48_pophu  cluster_data/TX_do_redistrict ILP_data/TX_input_ILP
 
 run_ILP_all: run_ILP_AL run_ILP_FL run_ILP_IL run_ILP_NY run_ILP_CA run_ILP_TX
 
+run_ILP : run_ILP_$(STATE)
+
 run_ILP_AL:
-	python3 reunification/ILP/split_pulp.py ILP_data/AL_input_ILP ILP_data/AL_output_ILP ILP_data/AL_log_ILP
+	python3 reunification/ILP/split_pulp.py $(SOLVER) ILP_data/AL_input_ILP ILP_data/AL_output_ILP ILP_data/AL_log_ILP
 run_ILP_FL:
-	python3 reunification/ILP/split_pulp.py ILP_data/FL_input_ILP ILP_data/FL_output_ILP ILP_data/FL_log_ILP
+	python3 reunification/ILP/split_pulp.py $(SOLVER) ILP_data/FL_input_ILP ILP_data/FL_output_ILP ILP_data/FL_log_ILP
 run_ILP_IL:
-	python3 reunification/ILP/split_pulp.py ILP_data/IL_input_ILP ILP_data/IL_output_ILP ILP_data/IL_log_ILP
+	python3 reunification/ILP/split_pulp.py $(SOLVER) ILP_data/IL_input_ILP ILP_data/IL_output_ILP ILP_data/IL_log_ILP
 run_ILP_NY:
-	python3 reunification/ILP/split_pulp.py ILP_data/NY_input_ILP ILP_data/NY_output_ILP ILP_data/NY_log_ILP
+	python3 reunification/ILP/split_pulp.py $(SOLVER) ILP_data/NY_input_ILP ILP_data/NY_output_ILP ILP_data/NY_log_ILP
 run_ILP_CA:
-	python3 reunification/ILP/split_pulp.py ILP_data/CA_input_ILP ILP_data/CA_output_ILP ILP_data/CA_log_ILP
+	python3 reunification/ILP/split_pulp.py $(SOLVER) ILP_data/CA_input_ILP ILP_data/CA_output_ILP ILP_data/CA_log_ILP
 run_ILP_TX:
-	python3 reunification/ILP/split_pulp.py ILP_data/TX_input_ILP ILP_data/TX_output_ILP ILP_data/TX_log_ILP
+	python3 reunification/ILP/split_pulp.py $(SOLVER) ILP_data/TX_input_ILP ILP_data/TX_output_ILP ILP_data/TX_log_ILP
 
 
 generate_images_all: generate_images_AL generate_images_FL generate_images_IL generate_images_NY generate_images_CA generate_images_TX
+
+generate_images : generate_images_$(STATE)
 
 generate_images_AL:
 	python3 main_script.py AL cluster_data/AL_do_redistrict shapestate_data/cb_2017_us_state_500k. census_data/AL_census ILP_data/AL_output_ILP gnuplot_data/AL_gnuplot

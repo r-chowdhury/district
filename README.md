@@ -28,6 +28,16 @@ The script selects the point to be the centroid of the census block
 
 shape.  (WHAT HAPPENS IF THE SHAPE CONSISTS OF MULTIPLE POLYGONS?)
 
+To launch programs from the makefile:
+
+make run_redistrict STATE=<STATE>  : runs do_redistrict and puts the output on cluster_data
+make run_prepare_ILP STATE=<STATE> : generates the file for preparing the ILP (output is saved in folder ILP_data
+make run_ILP STATE=<STATE> : run the ILP on the generated file, output is saved on ILP_data
+make generate_images STATE=<STATE> : run the python scripts to generate the gnuplot files and then run the gnuplot files and save the pdf in the folder gnuplot_data/
+
+
+
+
 Also, extract the boundary polygons of a state:
   python3 read_state_shapefile.py <ST> <input directory name>
  where <ST> is the two-letter abbreviation for a state, and <input directory name>
