@@ -18,6 +18,7 @@ def read():
         pt = x.shape.points[i]
         pts.append([pt[0],pt[1]])
         # print(pt[0], pt[1])
+        print_points(pts)
     return pts
 
 def print_points(pts):

@@ -1,0 +1,19 @@
+CXX=clang++
+CXXFLAGS=-g -std=c++11 -Wall -pedantic
+APPNAME=do_redistrict
+BIN=do_redistrict
+
+SRC=$(wildcard *.cpp)
+OBJ=$(SRC:%.cpp=%.o)
+
+all: $(OBJ)
+	$(CXX) -o $(BIN) $^
+
+%.o: %.c
+	$(CXX) $@ -c $<
+
+APPNAME: $(OBJECTS)
+	 $(CC) $(OBJECTS) -o APPNAME
+clean:
+	rm -f *.o
+	rm $(BIN)
