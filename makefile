@@ -68,38 +68,38 @@ run_ILP_TX:
 generate_images_all: generate_images_AL generate_images_FL generate_images_IL generate_images_NY generate_images_CA generate_images_TX
 
 generate_images_AL:
-	python3 main_script.py AL cluster_data/AL_do_redistrict shapestate_data/AL_shape census_data/AL_census ILP_data/AL_output_ILP gnuplot_data/AL_gnuplot
-	python3 main_script.py AL cluster_data/AL_do_redistrict shapestate_data/AL_shape gnuplot_data/AL_gnuplotnoreunification
+	python3 main_script.py AL cluster_data/AL_do_redistrict shapestate_data/cb_2017_us_state_500k. census_data/AL_census ILP_data/AL_output_ILP gnuplot_data/AL_gnuplot
+	python3 main_script.py AL cluster_data/AL_do_redistrict shapestate_data/cb_2017_us_state_500k. gnuplot_data/AL_gnuplotnoreunification
 	gnuplot	gnuplot_data/AL_gnuplot 
 	gnuplot	gnuplot_data/AL_gnuplot_noreunification
 
 generate_images_FL:
-	python3 main_script.py FL cluster_data/FL_do_redistrict shapestate_data/FL_shape census_data/FL_census ILP_data/FL_output_ILP gnuplot_data/FL_gnuplot
-	python3 main_script.py FL cluster_data/FL_do_redistrict shapestate_data/FL_shape gnuplot_data/FL_gnuplotnoreunification
+	python3 main_script.py FL cluster_data/FL_do_redistrict shapestate_data/cb_2017_us_state_500k. census_data/FL_census ILP_data/FL_output_ILP gnuplot_data/FL_gnuplot
+	python3 main_script.py FL cluster_data/FL_do_redistrict shapestate_data/cb_2017_us_state_500k. gnuplot_data/FL_gnuplotnoreunification
 	gnuplot	gnuplot_data/FL_gnuplot 
 	gnuplot	gnuplot_data/FL_gnuplot_noreunification
 
 generate_images_IL:
-	python3 main_script.py IL cluster_data/IL_do_redistrict shapestate_data/IL_shape census_data/IL_census ILP_data/IL_output_ILP gnuplot_data/IL_gnuplot
-	python3 main_script.py IL cluster_data/IL_do_redistrict shapestate_data/IL_shape gnuplot_data/IL_gnuplotnoreunification
+	python3 main_script.py IL cluster_data/IL_do_redistrict shapestate_data/cb_2017_us_state_500k. census_data/IL_census ILP_data/IL_output_ILP gnuplot_data/IL_gnuplot
+	python3 main_script.py IL cluster_data/IL_do_redistrict shapestate_data/cb_2017_us_state_500k. gnuplot_data/IL_gnuplotnoreunification
 	gnuplot	gnuplot_data/IL_gnuplot 
 	gnuplot	gnuplot_data/IL_gnuplot_noreunification
 
 generate_images_NY:
-	python3 main_script.py NY cluster_data/NY_do_redistrict shapestate_data/NY_shape census_data/NY_census ILP_data/NY_output_ILP gnuplot_data/NY_gnuplot
-	python3 main_script.py NY cluster_data/NY_do_redistrict shapestate_data/NY_shape gnuplot_data/NY_gnuplotnoreunification
+	python3 main_script.py NY cluster_data/NY_do_redistrict shapestate_data/cb_2017_us_state_500k. census_data/NY_census ILP_data/NY_output_ILP gnuplot_data/NY_gnuplot
+	python3 main_script.py NY cluster_data/NY_do_redistrict shapestate_data/cb_2017_us_state_500k. gnuplot_data/NY_gnuplotnoreunification
 	gnuplot	gnuplot_data/NY_gnuplot 
 	gnuplot	gnuplot_data/NY_gnuplot_noreunification
 
 generate_images_CA:
-	python3 main_script.py CA cluster_data/CA_do_redistrict  shapestate_data/CA_shape census_data/CA_census ILP_data/CA_output_ILP gnuplot_data/CA_gnuplot
-	python3 main_script.py CA cluster_data/CA_do_redistrict shapestate_data/CA_shape gnuplot_data/CA_gnuplotnoreunification
+	python3 main_script.py CA cluster_data/CA_do_redistrict  shapestate_data/cb_2017_us_state_500k. census_data/CA_census ILP_data/CA_output_ILP gnuplot_data/CA_gnuplot
+	python3 main_script.py CA cluster_data/CA_do_redistrict shapestate_data/cb_2017_us_state_500k. gnuplot_data/CA_gnuplotnoreunification
 	gnuplot	gnuplot_data/CA_gnuplot 
 	gnuplot	gnuplot_data/CA_gnuplot_noreunification
 
 generate_images_TX:
-	python3 main_script.py TX cluster_data/TX_do_redistrict shapestate_data/TX_shape census_data/TX_census ILP_data/TX_output_ILP gnuplot_data/TX_gnuplot
-	python3 main_script.py TX cluster_data/TX_do_redistrict shapestate_data/TX_shape gnuplot_data/TX_gnuplotnoreunification
+	python3 main_script.py TX cluster_data/TX_do_redistrict shapestate_data/cb_2017_us_state_500k. census_data/TX_census ILP_data/TX_output_ILP gnuplot_data/TX_gnuplot
+	python3 main_script.py TX cluster_data/TX_do_redistrict shapestate_data/cb_2017_us_state_500k. gnuplot_data/TX_gnuplotnoreunification
 	gnuplot	gnuplot_data/TX_gnuplot 
 	gnuplot	gnuplot_data/TX_gnuplot_noreunification
 

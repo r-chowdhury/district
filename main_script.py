@@ -29,7 +29,7 @@ if __name__ == "__main__":
             sys.argv[5],
             sys.argv[6],
         )
-    elif len(sys.argv) == 4:
+    elif len(sys.argv) == 5:
         state_abbreviation = sys.argv[1]
         C_3D, A, assign_pairs, bbox = vb.Parse(sys.argv[2])
         power_cells = vb.power_cells_fromfile(sys.argv[2])
