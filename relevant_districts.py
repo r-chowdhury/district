@@ -4,8 +4,7 @@
    input: sequence of pairs (census_block instance, ID of a district containing centroid)
    output: sequence of pairs (census_block instance, list of IDs of districts the census block intersects)
 '''
-# from embedded_graph import EGraph
-from shapely.geometry import LineString  # , shape?
+from shapely.geometry import LineString
 
 
 class Relevant_District_Item:
@@ -15,7 +14,6 @@ class Relevant_District_Item:
 
 def gen(census_block_plus_district_ID_collection, district_graph):
     for census_block, district_ID in census_block_plus_district_ID_collection:
-        # print("relevant districts") #for debugging
         # district_ID is ID of corresponding vertex in district_graph
 
         # below misses the case when block contains a district
@@ -27,12 +25,14 @@ def gen(census_block_plus_district_ID_collection, district_graph):
             segment = district_graph.segmentmapper.id2segment[d]
             if census_block.polygon.intersects(LineString(segment)):
                 neighbor = district_graph.head[district_graph.rev(d)]
-                if neighbor < district_graph.num_vertices()-1:  # if correspondings to a finite cell
+                if neighbor < district_graph.num_vertices()-1:  # if corresponds to a finite cell
                     relevant_districts.add(neighbor)
         yield census_block, [Relevant_District_Item(i) for i in relevant_districts]
 
 
 '''
+from embedded_graph import EGraph
+
 def find(iterator_maker):
     G = EGraph()
     block_id2vertex_id = {}
