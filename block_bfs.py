@@ -1,40 +1,46 @@
-'''
+"""
 Goal: for each census block and each district to which the census block could be assigned,
 find the neighboring census block that is closer to the center.
 
 Maybe an improvement would be to write to temporary file the blocks, organized by relevant district,
 and then read them in one by one so that the program doesn't use so much memory.
-'''
+"""
 from embedded_graph import EGraph
-from shapely.geometry import LineString, Point
+
+# from shapely.geometry import LineString, Point
 from collections import deque
 import pickle
 import time
-import deeper
+
+# import deeper
+
 
 def get(census_block_plus_collection, k):
     debugflag = True
     time_start = time.clock()
     G = EGraph()
     vertex2block_id = {}
-    relevant_vertices = [set() for _ in range(k)] # boundary vertices intersecting district i
+    relevant_vertices = [
+        set() for _ in range(k)
+    ]  # boundary vertices intersecting district i
     boundary_vertices = set()
-    vertex2block_plus = {} #maps a vertex to corresponding block and associated items
-    #create graph G of blocks,  assign them to relevant centers, identify boundary vertices, keep track of blocks of boundary vertices
+    vertex2block_plus = {}  # maps a vertex to corresponding block and associated items
+    # create graph G of blocks,  assign them to relevant centers, identify boundary vertices, keep track of blocks of boundary vertices
     counter = 0
     for block, relevant_district_items in census_block_plus_collection:
         if counter % 10000 == 0: print("block_bfs.py phase 1, counter", counter)
         counter = counter + 1
         v = G.num_vertices()
         vertex2block_id[v] = block.ID
-        G.process_cell(block.polygon) #new vertex ID is v  --- eliminate redundant vertices?  Maybe not.
-        if len(relevant_district_items) > 1: 
+        G.process_cell(
+            block.polygon
+        )  # new vertex ID is v  --- eliminate redundant vertices?  Maybe not.
+        if len(relevant_district_items) > 1:
             for item in relevant_district_items:
                 relevant_vertices[item.ID].add(v)
             boundary_vertices.add(v)
             vertex2block_plus[v] = block, relevant_district_items
-    time_start = time.clock()
-    #BFS to find parents/dependees for boundary blocks
+    # BFS to find parents/dependees for boundary blocks
     for i in range(k):
         waiting = deque(v for v in relevant_vertices[i] if v not in boundary_vertices)
         visited = set(waiting)
@@ -63,7 +69,7 @@ def get(census_block_plus_collection, k):
     return vertex2block_plus.values() #indexed by boundary_vertices
 
 
-'''
+"""
 import census_block
 import closest
 import relevant_districts
@@ -76,4 +82,4 @@ closest_it = closest.gen(census_block.gen(shapefilename), C_3D)
 relevant_it = relevant_districts.gen(closest_it, G)
 L = get(relevant_it, len(C_3D))
 print("here")
-'''
+"""
