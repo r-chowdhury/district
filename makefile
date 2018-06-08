@@ -51,18 +51,18 @@ $(OUT)/do_redistrict/TX: DISTRICTS = 36
 ### data files from https://www2.census.gov/geo/tiger/TIGER2010BLKPOPHU/...
 ## don't add directly to the repository (upload is too slow)
 
+data/%_census_blocks:
+	wget "https://www2.census.gov/geo/tiger/TIGER2010BLKPOPHU/tabblock2010_$(POPID)_pophu.zip"
+	mkdir data/$*_census_blocks
+	unzip tabblock2010_$(POPID)_pophu.zip -d data/$*_census_blocks
+	rm tabblock2010_$(POPID)_pophu.zip
+
 data/AL_census_blocks $(OUT)/prepare_ILP/AL: POPID = 01
 data/CA_census_blocks $(OUT)/prepare_ILP/CA: POPID = 06
 data/FL_census_blocks $(OUT)/prepare_ILP/FL: POPID = 12
 data/IL_census_blocks $(OUT)/prepare_ILP/IL: POPID = 17
 data/NY_census_blocks $(OUT)/prepare_ILP/NY: POPID = 36
 data/TX_census_blocks $(OUT)/prepare_ILP/TX: POPID = 48
-
-data/%_census_blocks:
-	wget "https://www2.census.gov/geo/tiger/TIGER2010BLKPOPHU/tabblock2010_$(POPID)_pophu.zip"
-	unzip tabblock2010_$(POPID)_pophu.zip
-	mv tabblock2010_$(POPID)_pophu data/$*_census_blocks
-	rm tabblock2010_$(POPID)_pophu.zip
 
 ### prepare_ILP
 
