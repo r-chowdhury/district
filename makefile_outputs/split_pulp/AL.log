@@ -1,0 +1,21 @@
+computing assignment using pulp, solver gurobi
+building split constraints (4.6e-06s)
+building discrepancy constraints (2.9e-06s)
+building refugee_blocks constraint (0.00066s)
+building dependency constraints (5.1e-06s)
+building ILP (5.6e-05s)
+solving ILPOptimize a model with 2 rows, 3 columns and 4 nonzeros
+Coefficient statistics:
+  Matrix range     [1e+00, 1e+00]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [0e+00, 0e+00]
+Presolve removed 2 rows and 2 columns
+Presolve time: 0.01s
+
+Solved in 0 iterations and 0.01 seconds
+Infeasible or unbounded model
+Gurobi status= 4
+ (0.037s)
+max discrepancy: None
+number of refugee blocks: None(of 0 with preferred_districts)

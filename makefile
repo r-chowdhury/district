@@ -18,118 +18,94 @@ CPPFLAGS = -O3 -Wall -std=c++1z
 BIN=cs2 do_redistrict test_initial_centers test_redistrict test_find_weights
 
 ####
-# Expecting the following folders to exists
-# census_data containing the output of read_census
-# cluster_data (will contain output of do_redistrict)
-# ILP_data (will contain input for ILP after split_pulp and the output of
-# the ILP)
-# gnuplot_data (will contain output of python script for and the output of
-# the gnuplot procedure)
-# data/CA_census_blocks/tabblock2010_06_pophu for all states (with correct
-# two-letters ID and number)
+# Expecting the following folders to exist:
+#   census_data
+#     -- containing the output of read_census
 
-# command is make "command" STATE=<two-letters id>
-# in case of run_ILP expect additional argument SOLVER=<name of solver for
-# split_pulp>
+#   data/CA_census_blocks/tabblock2010_06_pophu 
+#     -- for all states, with correct two-letters ID and number
 
-do_all_steps_AL: run_redistrict_AL run_prepare_ILP_AL run_ILP_AL generate_images_AL
-do_all_steps_FL: run_redistrict_FL run_prepare_ILP_FL run_ILP_FL generate_images_FL
-do_all_steps_IL: run_redistrict_IL run_prepare_ILP_IL run_ILP_IL generate_images_IL
-do_all_steps_NY: run_redistrict_NY run_prepare_ILP_NY run_ILP_NY generate_images_NY
-do_all_steps_CA: run_redistrict_CA run_prepare_ILP_CA run_ILP_CA generate_images_CA
-do_all_steps_TX: run_redistrict_TX run_prepare_ILP_TX run_ILP_TX generate_images_TX
+#   makefile_outputs/{do_redistrict, prepare_ILP, split_pulp, main_script, gnuplot}
+#     -- will contain output of the respective commands, under the state acronym
 
-run_redistrict : run_redistrict_$(STATE)
+# command to make pdfs is "make pdfs"
 
-run_redistrict_all: run_redistrict_AL run_redistrict_FL run_redistrict_IL run_redistrict_NY run_redistrict_TX run_redistrict_CA
+OUT=makefile_outputs
 
-run_redistrict_AL:
-	./do_redistrict 7 census_data/AL_census > cluster_data/AL_do_redistrict
-run_redistrict_FL:
-	./do_redistrict 27 census_data/FL_census > cluster_data/FL_do_redistrict
-run_redistrict_IL:
-	./do_redistrict 18 census_data/IL_census > cluster_data/IL_do_redistrict
-run_redistrict_NY:
-	./do_redistrict 27 census_data/NY_census > cluster_data/NY_do_redistrict
-run_redistrict_CA:
-	./do_redistrict 53 census_data/CA_census > cluster_data/CA_do_redistrict
-run_redistrict_TX:
-	./do_redistrict 36 census_data/TX_census > cluster_data/TX_do_redistrict
+pdfs: $(OUT)/gnuplot/AL.pdf $(OUT)/gnuplot/FL.pdf $(OUT)/gnuplot/IL.pdf $(OUT)/gnuplot/NY.pdf $(OUT)/gnuplot/CA.pdf
 
-run_prepare_ILP_all: run_prepare_ILP_AL run_prepare_ILP_FL run_prepare_ILP_IL run_prepare_ILP_NY run_prepare_ILP_TX run_prepare_ILP_CA
+### do_redistrict
 
-run_prepare_ILP: run_prepare_ILP_$(STATE)
+$(OUT)/do_redistrict/%: census_data/%_census do_redistrict
+	./do_redistrict $(DISTRICTS) $< > $@
 
-run_prepare_ILP_AL:
-	python3 prepare_ILP.py data/AL_census_blocks/tabblock2010_01_pophu  cluster_data/AL_do_redistrict ILP_data/AL_input_ILP
-run_prepare_ILP_CA:
-	python3 prepare_ILP.py data/CA_census_blocks/tabblock2010_06_pophu  cluster_data/CA_do_redistrict ILP_data/CA_input_ILP
-run_prepare_ILP_FL:
-	python3 prepare_ILP.py data/FL_census_blocks/tabblock2010_12_pophu  cluster_data/FL_do_redistrict ILP_data/FL_input_ILP
-run_prepare_ILP_IL:
-	python3 prepare_ILP.py data/IL_census_blocks/tabblock2010_17_pophu  cluster_data/IL_do_redistrict ILP_data/IL_input_ILP
-run_prepare_ILP_NY:
-	python3 prepare_ILP.py data/NY_census_blocks/tabblock2010_36_pophu  cluster_data/NY_do_redistrict ILP_data/NY_input_ILP
-run_prepare_ILP_TX:
-	python3 prepare_ILP.py data/TX_census_blocks/tabblock2010_48_pophu  cluster_data/TX_do_redistrict ILP_data/TX_input_ILP
+.PRECIOUS: $(OUT)/do_redistrict/%
 
-run_ILP_all: run_ILP_AL run_ILP_FL run_ILP_IL run_ILP_NY run_ILP_CA run_ILP_TX
+$(OUT)/do_redistrict/AL: DISTRICTS = 7
+$(OUT)/do_redistrict/CA: DISTRICTS = 53
+$(OUT)/do_redistrict/FL: DISTRICTS = 27
+$(OUT)/do_redistrict/IL: DISTRICTS = 18
+$(OUT)/do_redistrict/NY: DISTRICTS = 27
+$(OUT)/do_redistrict/TX: DISTRICTS = 36
 
-run_ILP : run_ILP_$(STATE)
+### data files from https://www2.census.gov/geo/tiger/TIGER2010BLKPOPHU/...
+## don't add directly to the repository (upload is too slow)
 
-run_ILP_AL:
-	python3 reunification/ILP/split_pulp.py $(SOLVER) ILP_data/AL_input_ILP ILP_data/AL_output_ILP ILP_data/AL_log_ILP
-run_ILP_FL:
-	python3 reunification/ILP/split_pulp.py $(SOLVER) ILP_data/FL_input_ILP ILP_data/FL_output_ILP ILP_data/FL_log_ILP
-run_ILP_IL:
-	python3 reunification/ILP/split_pulp.py $(SOLVER) ILP_data/IL_input_ILP ILP_data/IL_output_ILP ILP_data/IL_log_ILP
-run_ILP_NY:
-	python3 reunification/ILP/split_pulp.py $(SOLVER) ILP_data/NY_input_ILP ILP_data/NY_output_ILP ILP_data/NY_log_ILP
-run_ILP_CA:
-	python3 reunification/ILP/split_pulp.py $(SOLVER) ILP_data/CA_input_ILP ILP_data/CA_output_ILP ILP_data/CA_log_ILP
-run_ILP_TX:
-	python3 reunification/ILP/split_pulp.py $(SOLVER) ILP_data/TX_input_ILP ILP_data/TX_output_ILP ILP_data/TX_log_ILP
+data/AL_census_blocks $(OUT)/prepare_ILP/AL: POPID = 01
+data/CA_census_blocks $(OUT)/prepare_ILP/CA: POPID = 06
+data/FL_census_blocks $(OUT)/prepare_ILP/FL: POPID = 12
+data/IL_census_blocks $(OUT)/prepare_ILP/IL: POPID = 17
+data/NY_census_blocks $(OUT)/prepare_ILP/NY: POPID = 36
+data/TX_census_blocks $(OUT)/prepare_ILP/TX: POPID = 48
+
+data/%_census_blocks:
+	wget "https://www2.census.gov/geo/tiger/TIGER2010BLKPOPHU/tabblock2010_$(POPID)_pophu.zip"
+	unzip tabblock2010_$(POPID)_pophu.zip
+	mv tabblock2010_$(POPID)_pophu data/$*_census_blocks
+	rm tabblock2010_$(POPID)_pophu.zip
+
+### prepare_ILP
+
+$(OUT)/prepare_ILP/%: $(OUT)/do_redistrict/% data/%_census_blocks prepare_ILP.py
+	python3 prepare_ILP.py data/$*_census_blocks/tabblock2010_$(POPID)_pophu $< $@
+	test -s $@
+
+.PRECIOUS: $(OUT)/prepare_ILP/%
 
 
-generate_images_all: generate_images_AL generate_images_FL generate_images_IL generate_images_NY generate_images_CA generate_images_TX
+### split_pulp
 
-generate_images : generate_images_$(STATE)
+SPLIT_PULP = reunification/ILP/split_pulp.py
+SOLVER = gurobi
 
-generate_images_AL:
-	python3 main_script.py AL cluster_data/AL_do_redistrict shapestate_data/cb_2017_us_state_500k. census_data/AL_census ILP_data/AL_output_ILP gnuplot_data/AL_gnuplot
-	python3 main_script.py AL cluster_data/AL_do_redistrict shapestate_data/cb_2017_us_state_500k. gnuplot_data/AL_gnuplotnoreunification
-	gnuplot	gnuplot_data/AL_gnuplot 
-	gnuplot	gnuplot_data/AL_gnuplot_noreunification
+$(OUT)/split_pulp/%: $(OUT)/prepare_ILP/% $(SPLIT_PULP)
+	python3 $(SPLIT_PULP) $(SOLVER) $< $@ $@.log
 
-generate_images_FL:
-	python3 main_script.py FL cluster_data/FL_do_redistrict shapestate_data/cb_2017_us_state_500k. census_data/FL_census ILP_data/FL_output_ILP gnuplot_data/FL_gnuplot
-	python3 main_script.py FL cluster_data/FL_do_redistrict shapestate_data/cb_2017_us_state_500k. gnuplot_data/FL_gnuplotnoreunification
-	gnuplot	gnuplot_data/FL_gnuplot 
-	gnuplot	gnuplot_data/FL_gnuplot_noreunification
+.PRECIOUS: $(OUT)/split_pulp/%
 
-generate_images_IL:
-	python3 main_script.py IL cluster_data/IL_do_redistrict shapestate_data/cb_2017_us_state_500k. census_data/IL_census ILP_data/IL_output_ILP gnuplot_data/IL_gnuplot
-	python3 main_script.py IL cluster_data/IL_do_redistrict shapestate_data/cb_2017_us_state_500k. gnuplot_data/IL_gnuplotnoreunification
-	gnuplot	gnuplot_data/IL_gnuplot 
-	gnuplot	gnuplot_data/IL_gnuplot_noreunification
+### main_script
 
-generate_images_NY:
-	python3 main_script.py NY cluster_data/NY_do_redistrict shapestate_data/cb_2017_us_state_500k. census_data/NY_census ILP_data/NY_output_ILP gnuplot_data/NY_gnuplot
-	python3 main_script.py NY cluster_data/NY_do_redistrict shapestate_data/cb_2017_us_state_500k. gnuplot_data/NY_gnuplotnoreunification
-	gnuplot	gnuplot_data/NY_gnuplot 
-	gnuplot	gnuplot_data/NY_gnuplot_noreunification
+$(OUT)/main_script/%: main_script.py
+$(OUT)/main_script/%: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_500k census_data/%_census $(OUT)/split_pulp/%
+	python3 main_script.py $* $^ $@
 
-generate_images_CA:
-	python3 main_script.py CA cluster_data/CA_do_redistrict  shapestate_data/cb_2017_us_state_500k. census_data/CA_census ILP_data/CA_output_ILP gnuplot_data/CA_gnuplot
-	python3 main_script.py CA cluster_data/CA_do_redistrict shapestate_data/cb_2017_us_state_500k. gnuplot_data/CA_gnuplotnoreunification
-	gnuplot	gnuplot_data/CA_gnuplot 
-	gnuplot	gnuplot_data/CA_gnuplot_noreunification
+# get cb_2017_us_state_500k from
+# http://www2.census.gov/geo/tiger/GENZ2017/shp/cb_2017_us_state_500k.zip
 
-generate_images_TX:
-	python3 main_script.py TX cluster_data/TX_do_redistrict shapestate_data/cb_2017_us_state_500k. census_data/TX_census ILP_data/TX_output_ILP gnuplot_data/TX_gnuplot
-	python3 main_script.py TX cluster_data/TX_do_redistrict shapestate_data/cb_2017_us_state_500k. gnuplot_data/TX_gnuplotnoreunification
-	gnuplot	gnuplot_data/TX_gnuplot 
-	gnuplot	gnuplot_data/TX_gnuplot_noreunification
+.PRECIOUS: $(OUT)/main_script/%
+
+### gnuplot
+
+$(OUT)/gnuplot/%.pdf: $(OUT)/main_script/%
+	gnuplot	$<
+
+.PRECIOUS: $(OUT)/gnuplot/%
+
+# generate_images_IL:
+# 	python3 main_script.py IL cluster_data/IL_do_redistrict shapestate_data/cb_2017_us_state_500k. census_data/IL_census ILP_data/IL_output_ILP gnuplot_data/IL_gnuplot
+# 	python3 main_script.py IL cluster_data/IL_do_redistrict shapestate_data/cb_2017_us_state_500k. gnuplot_data/IL_gnuplotnoreunification
+# 	gnuplot	gnuplot_data/IL_gnuplot 
+# 	gnuplot	gnuplot_data/IL_gnuplot_noreunification
 
 
 clean:
