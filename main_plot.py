@@ -383,11 +383,12 @@ def GNUplot(
         # print("color", colors[i])
         GNUplot_polygon(pol, f, col)
 
-    for block in census_block.gen(boundary_census_shapefile_name):
-        if block.ID in boundary_census_assign:
-            GNUplot_boundary_census(
-                block.polygon, f, colors[boundary_census_assign[block.ID]]
-            )
+    if(boundary_census_shapefile_name != ""):
+        for block in census_block.gen(boundary_census_shapefile_name):
+            if block.ID in boundary_census_assign:
+                GNUplot_boundary_census(
+                    block.polygon, f, colors[boundary_census_assign[block.ID]]
+                )
     offset_x = 0.1 * (bbox[1][0] - bbox[0][0])
     offset_y = 0.1 * (bbox[1][1] - bbox[0][1])
     f.write(
