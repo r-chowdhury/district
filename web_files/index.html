@@ -2,44 +2,179 @@
 <html>
 <head>
 	<title>Main</title>
+	<link rel='stylesheet' href='./styles.css'>
 	<link rel="stylesheet" href="https://openlayers.org/en/v4.6.5/css/ol.css" type="text/css">
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 	<script src="https://openlayers.org/en/v4.6.5/build/ol.js"></script>
 </head>
 <body>
-	<div id='map' class='map'>
-	Hello world
+	<div id='interface' class='interface'>
+		<div id='loading-gif'>
+		</div>
+		<div id='controls' class='controls'>
+			<input type='search' id='state-search' class='controls' placeholder='Search states'>
+			<div id='state-list' class='state-list'></div>
+			<form method='POST' action='/redistrict' id='redistrictForm'>
+				<input type='number' name='number' id='number-input' placeholder='Number of districts' required>
+				<input type='hidden' name='state' id='state-input' value='RI'>
+				<input type='submit' id='redistrictSubmit' class='submit' value='Redistrict!'>
+			</form>
+		</div>
+		<div id='map-container'>
+			<div id='map' class='map'>
+			</div>
+		</div>
+
 	</div>
 	<script>
 		//alert('hello');
 		$(document).ready(function(){
-			$.get('/state/RI', function(data, status){
-				var stateData = JSON.parse(data);
 
-				createmap(stateData.type, stateData.coordinates);
+			var map, districtLayers, boundlayer;
+
+			setupmap('RI');//default state
+
+
+			///////////////////
+			//CONTROLS/INPUTS//
+			///////////////////
+			$.get('/states', function(data, status){
+				makeStateList(JSON.parse(data));
+
+			});
+
+			function makeStateList(states){
+				for (var i in states){
+					var para = document.createElement("p");
+					$(para).html(states[i]);
+					$(para).prop("code", i);
+					$('#state-list').append(para);
+				}
+			}
+
+			$('#state-search').on('keyup search', function(e){
+				var letters = $('#state-search').val();
+				var states = $('#state-list').children();
+				console.log(states);
+
+				for (var i in states){
+					var state = states[i].innerHTML;
+					console.log(states[i].innerHTML);
+					if (!state.startsWith(letters)){
+						$(states[i]).css('display','none');
+					}
+					else {
+						$(states[i]).css('display','block');
+					}
+
+				}
+
+			});
+
+			$('#redistrictForm').submit(redistrict);
+
+			function redistrict(event){
+				event.preventDefault();
+
+				$('#loading-gif').css('display', 'block');
+
+				var center_coords = map.getView().getCenter();
+				var loading = new ol.Overlay({
+  					element: document.getElementById('loading-gif'),
+  					position: center_coords,
+  					positioning: 'center-center'
+				});
+				//loading.setPosition(center_coords);
+				map.addOverlay(loading);
+				map.renderSync();
+				console.log(center_coords);
+				var number = $('#number-input').val();
+				var state = $('#state-input').val();
+
+
+				$.get('/redistrict/'+state+'/'+number, function(res){
+					drawDistricts(res);
+					//map.removeOverlay(loading);
+					$('#loading-gif').css('display', 'none');
+
+				})
+			}
+
+			$(document).on('click', 'p', function(){
+				var code = $(this).prop("code");
+
+				$('#state-input').val(code);
+				panToState(code);
+			});
+
+
+			///////////////
+			//DRAWING MAP//
+			///////////////
+
+			function panToState(state){
+				$.get('/state/'+state, function(data, status){
+					drawDistricts(data);
+				})
+			}
+
+			function drawDistricts(data){
+				var json = JSON.parse(data);
+				var stateData = json.geometry;
+				var districts = json.polygons;
+				var zoom = json.zoom;
+
+				console.log(json.geometry.center);
+				console.log(districts);
+				map.getView().setCenter(ol.proj.fromLonLat(stateData.center));
+				map.removeLayer(boundlayer);
+				for (var i in districtLayers){
+					map.removeLayer(districtLayers[i]);
+				}
+				var newlayers = formLayers(stateData.type, stateData.coordinates, stateData.center, districts);
+				console.log(newlayers.length);
+				for (var j in newlayers){
+					map.addLayer(newlayers[j]);
+					console.log(map.getLayers());
+				}
+				map.getView().setZoom(zoom);
 				console.log(status);
-			})
+			}
 
-			function createmap(type, coords) {
-				var polyfeature = new ol.Feature({});
+			function setupmap(state){
+				$.get('/state/'+state, function(data, status){
+					var json = JSON.parse(data);
+					var stateData = json.geometry;
+					var districts = json.polygons;
+					var zoom = json.zoom;
 
+					console.log(districts);
 
+					createmap(stateData.type, stateData.coordinates, stateData.center, zoom, districts);
+					console.log(status);
+				})
+			}
+
+			function formLayers(type, coords, center, districts) {
+				var geometry;
+				var boundfeature = new ol.Feature({});
 
 				if (type == 'Polygon'){
-					var geometry = new ol.geom.Polygon(coords);
-					geometry.transform('EPSG:4326', 'EPSG:3857');
-
-					polyfeature.setGeometry(geometry);
+					geometry = new ol.geom.Polygon(coords);
 				}
+
 				else if (type == 'MultiPolygon'){
 					var geometry = new ol.geom.MultiPolygon(coords);
-					geometry.transform('EPSG:4326', 'EPSG:3857');
-					polyfeature.setGeometry(geometry);
 				}
 
-				var layer = new ol.layer.Vector({
+				geometry.transform('EPSG:4326', 'EPSG:3857');
+				boundfeature.setGeometry(geometry);
+
+				districtLayers = drawDistrictLayers(districts, geometry);
+
+				boundlayer = new ol.layer.Vector({
 				    source: new ol.source.Vector({
-				        features: [polyfeature]
+				        features: [boundfeature]
 				    }),
 				    style: new ol.style.Style({
 				    	stroke: new ol.style.Stroke({
@@ -53,89 +188,41 @@
 				    opacity: 0.5
 				})
 
-				console.log(coords[6][0].length)
+				return (districtLayers.concat([boundlayer]));
+			}
 
-				var districts = makeDistricts(coords[6][0].map(coord => ol.proj.fromLonLat(coord)));
-
-				var babyfeature = new ol.Feature({});
-				var centerPt = [-71.576667, 41.671667];
-
-				var border = coords[0][0];
-				var geom = new ol.geom.Polygon([border]);
-				geom.transform('EPSG:4326', 'EPSG:3857');
-
-				babyfeature.setGeometry(geom);
-
-				var babylayer = new ol.layer.Vector({
-				    source: new ol.source.Vector({
-				        features: [babyfeature]
-				    }),
-				    style: new ol.style.Style({
-				    	stroke: new ol.style.Stroke({
-				    		width: 3,
-				    		color: 'black'
-				    	}),
-				    	fill: new ol.style.Fill({
-				    		color: 'red'
-				    	})
-				    }),
-				    opacity: 0.5
-				})
-
-				var point = new ol.layer.Vector({
-					source: new ol.source.Vector({
-				        features: [new ol.Feature({
-				        	geometry: new ol.geom.Point([-71.576667, 41.671667])
-				        })]
-				    }),
-				    style: new ol.style.Style({
-				    	stroke: new ol.style.Stroke({
-				    		width: 5,
-				    		color: 'black'
-				    	})
-				    }),
-				    opacity: 0.5
-				})
-
+			function createmap(type, coords, center, zoom, districts) {
+				var layers = formLayers(type, coords, center, districts);
 
 				var osm = new ol.layer.Tile({
 					source: new ol.source.OSM(),
 					opacity: 0.75
 				})
 
-
-				var map = new ol.Map({
+				map = new ol.Map({
 					target: 'map',
-		        	layers: [osm, layer, point, babylayer].concat(districts),
+		        	layers: [osm].concat(layers),
 		        	view: new ol.View({
-		        		center: ol.proj.fromLonLat([-71.576667, 41.671667]),
-		          		zoom: 9
+		        		center: ol.proj.fromLonLat(center),
+		          		zoom: zoom
 		        	})
 		      	});
 
 			}
 
-			function makeDistricts(coords){
+			function drawDistrictLayers(coords, geometry){
 
-				var centerPt = [-71.576667, 41.671667];
-				var somePts = [centerPt, [-71.523400, 41.671667], [-71.523400, 41.641667], [-71.576667, 41.641667]].map(coord => ol.proj.fromLonLat(coord));
+				var layers = [];
 
-				var borderSegs = [coords.slice(0,41), coords.slice(40,82), coords.slice(81,123), coords.slice(122,166).concat([coords[0]])];
+				for (var i in coords){
 
-				console.log(borderSegs);
-
-				var districts = [];
-
-				for (var i in borderSegs){
-
-					var j = 1 + parseInt(i);
-
-					console.log(i, j);
+					var geom = new ol.geom.Polygon([coords[i]]);
+					geom.transform('EPSG:4326', 'EPSG:3857');
 
 					var vector = new ol.layer.Vector({
 				    	source: new ol.source.Vector({
 				        	features: [new ol.Feature({
-				        		geometry: new ol.geom.Polygon([borderSegs[i].concat([somePts[j%4], somePts[i]])])
+				        		geometry: geom
 				        	})]
 				    	}),
 				    	style: new ol.style.Style({
@@ -150,29 +237,31 @@
 				    	opacity: 0.5
 					});
 
-					districts.push(vector);
+					//https://gist.github.com/elemoine/b95420de2db3707f2e89
+					vector.on('precompose', function(event) {
+				        var ctx = event.context;
+          				var vecCtx = event.vectorContext;
+				        ctx.save();
+
+				        var fillStyle = new ol.style.Style({fill: new ol.style.Fill({color: [0, 0, 0, 0]})});
+
+
+				        vecCtx.setStyle(fillStyle);
+				        vecCtx.drawGeometry(geometry);
+				        
+				        ctx.clip();
+				        
+				      });
+
+				    vector.on('postcompose', function(event) {
+				        var ctx = event.context;
+				        ctx.restore();
+				      });
+
+					layers.push(vector);
 				}
 
-				var middlePoly = new ol.layer.Vector({
-				    	source: new ol.source.Vector({
-				        	features: [new ol.Feature({
-				        		geometry: new ol.geom.Polygon([somePts])
-				        	})]
-				    	}),
-				    	style: new ol.style.Style({
-				    		stroke: new ol.style.Stroke({
-				    			width: 1,
-				    			color: 'black'
-				    		}),
-				    		fill: new ol.style.Fill({
-				    			color: getRandomColor().toString()
-				    		})
-				    	}),
-				    	opacity: 0.5
-					});
-				districts.push(middlePoly);
-
-				return districts;
+				return layers;
 			}
 
 
