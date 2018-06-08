@@ -33,7 +33,7 @@ def Parse(filename):
     j = 0
     for i in range(nb_centers+1, nb_centers+nb_clients+1):
         s = lines[i].split()
-        id = int(s.pop(0))
+#        ids = int(s.pop(0))
         x = float(s.pop(0))
         y = float(s.pop(0))
         A.append([x,y])
@@ -113,11 +113,16 @@ def power_cells_fromfile(filename):
     return power_cells(C_3D, bbox)
 
     
-# if __name__ == '__main__':
-#     if len(sys.argv) < 3:
-#         print("Use: ", sys.argv[0], "[file name] [output file name]")
-#         exit(-1)
-#     C_3D, A, assign_pairs, bbox = Parse(sys.argv[1])
-#     # Parse_and_plot_boundary(sys.argv[2])
-#     plot_helper(C_3D, A, assign_pairs, bbox, sys.argv[2])
+if __name__ == '__main__':
+    power_cells = power_cells_fromfile(sys.argv[1])
+    def getCoords(polygon):
+        return list(polygon.exterior.coords)
+    coords = map(getCoords, power_cells)
+    print(list(coords))
+    if len(sys.argv) < 2:
+        print("Use: ", sys.argv[0], "[file name]")
+        exit(-1)
+    #print(power_cells_fromfile(sys.argv[1]))
+     # Parse_and_plot_boundary(sys.argv[2])
+    #plot_helper(C_3D, A, assign_pairs, bbox, sys.argv[2])
     
