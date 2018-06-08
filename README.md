@@ -30,7 +30,7 @@ Also, extract the boundary polygons of a state:
   python3 read_state_shapefile.py <ST> <input directory name>
  where <ST> is the two-letter abbreviation for a state, and <input directory name>
 is the name of a directory (not including suffix) giving shape records for
-  state boundaries, e.g. cb_2016_us_state_500k as downloaded from https://www.census.gov/geo/maps-data/data/cbf/cbf_state.html
+  state boundaries, e.g. cb_2016_us_state_500k as downloaded from clear
 
 Next, compute the clustering using
    do_redistrict <k> <input_filename>
