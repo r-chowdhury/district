@@ -1,7 +1,10 @@
 *.o
 *.pdf
 *~
+*.pyc
 __pycache__
 .DS_Store
 data
+gurobi.log
+google_drive
 do_redistrict
