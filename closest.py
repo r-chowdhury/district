@@ -1,20 +1,18 @@
-import census_block
-
 def distsq(center3d, pt2d):
-    #print("center3d", center3d)
-    #print("pt2d", pt2d)
     x = center3d[0] - pt2d.x
     y = center3d[1] - pt2d.y
-    return x*x + y*y + center3d[2]*center3d[2]
+    return x * x + y * y + center3d[2] * center3d[2]
+
 
 def gen(census_block_generator, C_3D):
     for block in census_block_generator:
-        #print("closest") #for debugging
         centroid = block.centroid
-        j = min((i for i in range(len(C_3D))), key=lambda i:distsq(C_3D[i], centroid))
+        j = min((i for i in range(len(C_3D))), key=lambda i: distsq(C_3D[i], centroid))
         yield block, j
-        
-'''
+
+
+"""
+import census_block
 
 assignment_filename = "data/California_new_assignment.txt"
 shape_filename = "data/California_census_blocks/tabblock2010_06_pophu"
@@ -37,4 +35,4 @@ for block in census_block.generator(shape_filename):
 
 fout.close()
 
-'''
+"""
