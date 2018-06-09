@@ -58,6 +58,16 @@ data/IL_census_blocks $(OUT)/census_block/IL $(OUT)/prepare_ILP/IL $(OUT)/main_s
 data/NY_census_blocks $(OUT)/census_block/NY $(OUT)/prepare_ILP/NY $(OUT)/main_script/NY: POPID = 36
 data/TX_census_blocks $(OUT)/census_block/TX $(OUT)/prepare_ILP/TX $(OUT)/main_script/TX: POPID = 48
 
+# and main_script.py below depends on cb_2017_us_state_500k
+
+shapestate_data/cb_2017_us_state_500k.shp:
+	wget "http://www2.census.gov/geo/tiger/GENZ2017/shp/cb_2017_us_state_500k.zip"
+	mkdir -p shapestate_data
+	unzip cb_2017_us_state_500k.zip -d shapestate_data
+	rm cb_2017_us_state_500k.zip
+
+.PRECIOUS: shapestate_data/cb_2017_us_state_500k.shp
+
 #################
 ################# 2. census_block.py  
 #################
@@ -110,15 +120,21 @@ $(OUT)/split_pulp/%: $(OUT)/prepare_ILP/% $(SPLIT_PULP)
 .PRECIOUS: $(OUT)/split_pulp/%
 
 #################
-################# 5. main_script (with reunification)
+################# 5. main_script
 #################
+
+## main_script with reunification
 
 $(OUT)/main_script/%: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_500k* data/%_census_blocks/* $(OUT)/split_pulp/% main_script.py
 	mkdir -p $(OUT)/main_script
 	python3 main_script.py $* $(OUT)/do_redistrict/$* shapestate_data/cb_2017_us_state_500k data/$*_census_blocks/tabblock2010_$(POPID)_pophu $(OUT)/split_pulp/$* $@
 
-# get cb_2017_us_state_500k from
-# http://www2.census.gov/geo/tiger/GENZ2017/shp/cb_2017_us_state_500k.zip
+## with reunification
+
+$(OUT)/main_script/%: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_500k* data/%_census_blocks/* $(OUT)/split_pulp/% main_script.py
+	mkdir -p $(OUT)/main_script
+	python3 main_script.py $* $(OUT)/do_redistrict/$* shapestate_data/cb_2017_us_state_500k data/$*_census_blocks/tabblock2010_$(POPID)_pophu $(OUT)/split_pulp/$* $@
+
 
 .PRECIOUS: $(OUT)/main_script/%
 
