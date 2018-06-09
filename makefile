@@ -19,24 +19,47 @@ BIN=cs2 do_redistrict test_initial_centers test_redistrict test_find_weights
 
 ####
 # Expecting the following folders to exist:
-#   census_data
-#     -- containing the output of read_census
 
 #   data/CA_census_blocks/tabblock2010_06_pophu 
 #     -- for all states, with correct two-letters ID and number
 
-#   makefile_outputs/{do_redistrict, prepare_ILP, split_pulp, main_script, gnuplot}
+#   makefile_outputs/{census_block, do_redistrict, prepare_ILP, split_pulp, main_script, gnuplot}
 #     -- will contain output of the respective commands, under the state acronym
 
 # command to make pdfs is "make pdfs"
 
-OUT=makefile_outputs
+OUT = makefile_outputs
 
-pdfs: $(OUT)/gnuplot/AL.pdf $(OUT)/gnuplot/FL.pdf $(OUT)/gnuplot/IL.pdf $(OUT)/gnuplot/NY.pdf $(OUT)/gnuplot/CA.pdf
+# pdfs: $(OUT)/gnuplot/AL.pdf $(OUT)/gnuplot/FL.pdf $(OUT)/gnuplot/IL.pdf $(OUT)/gnuplot/NY.pdf $(OUT)/gnuplot/CA.pdf
+pdfs: $(OUT)/main_script/AL.pdf $(OUT)/main_script/FL.pdf $(OUT)/main_script/IL.pdf $(OUT)/main_script/NY.pdf $(OUT)/main_script/CA.pdf
+
+### data files from https://www2.census.gov/geo/tiger/TIGER2010BLKPOPHU/...
+## don't add directly to the repository (upload is too slow)
+
+downloads: data/AL_census_blocks data/CA_census_blocks data/FL_census_blocks data/IL_census_blocks data/NY_census_blocks data/TX_census_blocks
+
+data/%_census_blocks:
+	wget "https://www2.census.gov/geo/tiger/TIGER2010BLKPOPHU/tabblock2010_$(POPID)_pophu.zip"
+	mkdir data/$*_census_blocks
+	unzip tabblock2010_$(POPID)_pophu.zip -d data/$*_census_blocks
+	rm tabblock2010_$(POPID)_pophu.zip
+
+.PRECIOUS: data/%_census_blocks
+
+data/AL_census_blocks $(OUT)/census_block/AL $(OUT)/prepare_ILP/AL $(OUT)/main_script/AL: POPID = 01
+data/CA_census_blocks $(OUT)/census_block/CA $(OUT)/prepare_ILP/CA $(OUT)/main_script/CA: POPID = 06
+data/FL_census_blocks $(OUT)/census_block/FL $(OUT)/prepare_ILP/FL $(OUT)/main_script/FL: POPID = 12
+data/IL_census_blocks $(OUT)/census_block/IL $(OUT)/prepare_ILP/IL $(OUT)/main_script/IL: POPID = 17
+data/NY_census_blocks $(OUT)/census_block/NY $(OUT)/prepare_ILP/NY $(OUT)/main_script/NY: POPID = 36
+data/TX_census_blocks $(OUT)/census_block/TX $(OUT)/prepare_ILP/TX $(OUT)/main_script/TX: POPID = 48
+
+### process census data files
+$(OUT)/census_block/%: data/%_census_blocks census_block.py
+	python3 census_block.py data/$*_census_blocks/tabblock2010_$(POPID)_pophu $@
 
 ### do_redistrict
 
-$(OUT)/do_redistrict/%: census_data/%_census do_redistrict
+$(OUT)/do_redistrict/%: $(OUT)/census_block/% do_redistrict
 	./do_redistrict $(DISTRICTS) $< > $@
 
 .PRECIOUS: $(OUT)/do_redistrict/%
@@ -48,27 +71,9 @@ $(OUT)/do_redistrict/IL: DISTRICTS = 18
 $(OUT)/do_redistrict/NY: DISTRICTS = 27
 $(OUT)/do_redistrict/TX: DISTRICTS = 36
 
-### data files from https://www2.census.gov/geo/tiger/TIGER2010BLKPOPHU/...
-## don't add directly to the repository (upload is too slow)
-
-data/%_census_blocks:
-	wget "https://www2.census.gov/geo/tiger/TIGER2010BLKPOPHU/tabblock2010_$(POPID)_pophu.zip"
-	mkdir data/$*_census_blocks
-	unzip tabblock2010_$(POPID)_pophu.zip -d data/$*_census_blocks
-	rm tabblock2010_$(POPID)_pophu.zip
-
-.PRECIOUS: data/%_census_blocks
-
-data/AL_census_blocks $(OUT)/prepare_ILP/AL: POPID = 01
-data/CA_census_blocks $(OUT)/prepare_ILP/CA: POPID = 06
-data/FL_census_blocks $(OUT)/prepare_ILP/FL: POPID = 12
-data/IL_census_blocks $(OUT)/prepare_ILP/IL: POPID = 17
-data/NY_census_blocks $(OUT)/prepare_ILP/NY: POPID = 36
-data/TX_census_blocks $(OUT)/prepare_ILP/TX: POPID = 48
-
 ### prepare_ILP
 
-$(OUT)/prepare_ILP/%: $(OUT)/do_redistrict/% data/%_census_blocks prepare_ILP.py
+$(OUT)/prepare_ILP/%: $(OUT)/do_redistrict/% data/%_census_blocks/* prepare_ILP.py
 	python3 prepare_ILP.py data/$*_census_blocks/tabblock2010_$(POPID)_pophu $< $@
 	test -s $@
 
@@ -87,9 +92,8 @@ $(OUT)/split_pulp/%: $(OUT)/prepare_ILP/% $(SPLIT_PULP)
 
 ### main_script
 
-$(OUT)/main_script/%: main_script.py
-$(OUT)/main_script/%: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_500k census_data/%_census $(OUT)/split_pulp/%
-	python3 main_script.py $* $^ $@
+$(OUT)/main_script/%: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_500k* data/%_census_blocks/* $(OUT)/split_pulp/% main_script.py
+	python3 main_script.py $* $(OUT)/do_redistrict/$* shapestate_data/cb_2017_us_state_500k data/$*_census_blocks/tabblock2010_$(POPID)_pophu $(OUT)/split_pulp/$* $@
 
 # get cb_2017_us_state_500k from
 # http://www2.census.gov/geo/tiger/GENZ2017/shp/cb_2017_us_state_500k.zip
@@ -98,10 +102,9 @@ $(OUT)/main_script/%: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_50
 
 ### gnuplot
 
-$(OUT)/gnuplot/%.pdf: $(OUT)/main_script/%
+# $(OUT)/gnuplot/%.pdf: $(OUT)/main_script/%
+$(OUT)/main_script/%.pdf: $(OUT)/main_script/%
 	gnuplot	$<
-
-.PRECIOUS: $(OUT)/gnuplot/%
 
 # generate_images_IL:
 # 	python3 main_script.py IL cluster_data/IL_do_redistrict shapestate_data/cb_2017_us_state_500k. census_data/IL_census ILP_data/IL_output_ILP gnuplot_data/IL_gnuplot
