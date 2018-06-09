@@ -18,10 +18,14 @@ CPPFLAGS = -O3 -Wall -std=c++1z
 BIN=cs2 do_redistrict test_initial_centers test_redistrict test_find_weights
 
 .DELETE_ON_ERROR:
-# If .DELETE_ON_ERROR is mentioned as a target anywhere in the
+# "If .DELETE_ON_ERROR is mentioned as a target anywhere in the
 # makefile, then make will delete the target of a rule if it has
 # changed and its recipe exits with a nonzero exit status, just as it
 # does when it receives a signal. See Errors in Recipes.
+
+.SECONDARY:
+# https://stackoverflow.com/questions/17625394/secondary-for-a-pattern-rule-with-gnu-make
+# "You can use .SECONDARY with no prerequisites, this will set all intermediate targets behave as SECONDARY.
 
 ####
 # Expecting the following folders to exist:
@@ -72,7 +76,7 @@ $(STATES:%=data/%_census_blocks): data/%_census_blocks:
 	rm tabblock2010_$($*_POPID)_pophu.zip
 	test -s data/$*_census_blocks/tabblock2010_$($*_POPID)_pophu.shp
 
-.PRECIOUS: data/%_census_blocks
+# .PRECIOUS: data/%_census_blocks
 
 # and main_script.py below depends on cb_2017_us_state_500k
 
@@ -84,7 +88,7 @@ shapestate_data/cb_2017_us_state_500k.shp:
 	rm cb_2017_us_state_500k.zip
 	test -s $@
 
-.PRECIOUS: shapestate_data/cb_2017_us_state_500k.shp
+# .PRECIOUS: shapestate_data/cb_2017_us_state_500k.shp
 
 #################
 ################# 2. census_block.py  
@@ -95,7 +99,7 @@ $(STATES:%=$(OUT)/census_block/%): $(OUT)/census_block/%: data/%_census_blocks c
 	python3 census_block.py data/$*_census_blocks/tabblock2010_$($*_POPID)_pophu $@
 	test -s $@
 
-.PRECIOUS: $(OUT)/census_block/%
+# .PRECIOUS: $(OUT)/census_block/%
 
 #################
 ################# 3. do_redistrict
@@ -115,7 +119,7 @@ $(STATES:%=$(OUT)/do_redistrict/%): $(OUT)/do_redistrict/%: $(OUT)/census_block/
 	./do_redistrict $($*_DISTRICTS) $< > $@
 	test -s $@
 
-.PRECIOUS: $(OUT)/do_redistrict/%
+# .PRECIOUS: $(OUT)/do_redistrict/%
 
 #################
 ################# 3. prepare_ILP.py
@@ -126,7 +130,7 @@ $(STATES:%=$(OUT)/prepare_ILP/%): $(OUT)/prepare_ILP/%: $(OUT)/do_redistrict/% d
 	python3 prepare_ILP.py data/$*_census_blocks/tabblock2010_$($*_POPID)_pophu $< $@
 	test -s $@
 
-.PRECIOUS: $(OUT)/prepare_ILP/%
+# .PRECIOUS: $(OUT)/prepare_ILP/%
 
 #################
 ################# 4. split_pulp -- solve ILP
@@ -140,7 +144,7 @@ $(STATES:%=$(OUT)/split_pulp/%): $(OUT)/split_pulp/%: $(OUT)/prepare_ILP/% $(SPL
 	python3 $(SPLIT_PULP) $(SOLVER) $< $@ $@.log
 	test -s $@
 
-.PRECIOUS: $(OUT)/split_pulp/%
+# .PRECIOUS: $(OUT)/split_pulp/%
 
 #################
 ################# 5. main_script
@@ -153,7 +157,7 @@ $(STATES:%=$(OUT)/main_script/%_blocks): $(OUT)/main_script/%_blocks: $(OUT)/do_
 	python3 main_script.py $* $(OUT)/do_redistrict/$* shapestate_data/cb_2017_us_state_500k data/$*_census_blocks/tabblock2010_$($*_POPID)_pophu $(OUT)/split_pulp/$* $@
 	test -s $@
 
-.PRECIOUS: $(OUT)/main_script/%_blocks
+# .PRECIOUS: $(OUT)/main_script/%_blocks
 
 ## main_script without reunification
 
