@@ -1,21 +1,44 @@
 computing assignment using pulp, solver gurobi
-building split constraints (4.6e-06s)
-building discrepancy constraints (2.9e-06s)
-building refugee_blocks constraint (0.00066s)
-building dependency constraints (5.1e-06s)
-building ILP (5.6e-05s)
-solving ILPOptimize a model with 2 rows, 3 columns and 4 nonzeros
+building split constraints (0.053s)
+building discrepancy constraints (0.056s)
+building refugee_blocks constraint (0.0068s)
+building dependency constraints (0.014s)
+building ILP (0.015s)
+solving ILPOptimize a model with 1480 rows, 2049 columns and 5258 nonzeros
+Variable types: 10 continuous, 2039 integer (0 binary)
 Coefficient statistics:
-  Matrix range     [1e+00, 1e+00]
+  Matrix range     [1e+00, 2e+03]
   Objective range  [1e+00, 1e+00]
-  Bounds range     [0e+00, 0e+00]
-  RHS range        [0e+00, 0e+00]
-Presolve removed 2 rows and 2 columns
-Presolve time: 0.01s
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [1e+00, 1e+04]
+Presolve removed 1067 rows and 1123 columns
+Presolve time: 0.06s
+Presolved: 413 rows, 926 columns, 2647 nonzeros
+Variable types: 0 continuous, 926 integer (883 binary)
+Found heuristic solution: objective 3418.0000000
+Found heuristic solution: objective 3381.0000000
+Found heuristic solution: objective 3261.0000000
+Found heuristic solution: objective 2743.0000000
 
-Solved in 0 iterations and 0.01 seconds
-Infeasible or unbounded model
-Gurobi status= 4
- (0.037s)
-max discrepancy: None
-number of refugee blocks: None(of 0 with preferred_districts)
+Root relaxation: objective 0.000000e+00, 89 iterations, 0.01 seconds
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0    0.00000    0    5 2743.00000    0.00000   100%     -    0s
+H    0     0                       7.0000000    0.00000   100%     -    0s
+H    0     0                       5.0000000    0.00000   100%     -    0s
+H    0     0                       4.0000000    0.00000   100%     -    0s
+H    0     0                       0.0000000    0.00000  0.00%     -    0s
+
+Explored 1 nodes (89 simplex iterations) in 0.15 seconds
+Thread count was 4 (of 4 available processors)
+
+Solution count 8: 0 4 5 ... 3418
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective 0.000000000000e+00, best bound 0.000000000000e+00, gap 0.0000%
+Gurobi status= 2
+ (0.32s)
+max discrepancy: -0.0
+number of refugee blocks: 0.0(of 259 with preferred_districts)
