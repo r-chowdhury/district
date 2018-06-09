@@ -11,8 +11,6 @@ def Parse(filename):
     s = lines[0].split()
     nb_centers = int(s[0])
     nb_clients = int(s[1])
-    x_min, y_min, z_min = (float("inf"),float("inf"),float("inf"))
-    x_max, y_max, z_max = (-float("inf"),-float("inf"),-float("inf"))
     
     C = []
     for i in range(1, nb_centers+1):
@@ -21,12 +19,6 @@ def Parse(filename):
         y = float(s[1])
         z = float(s[2])
         C.append([x,y,z])
-        x_max = max(x_max, x)
-        y_max = max(y_max, y)
-        z_max = max(z_max, z)
-        x_min = min(x_min, x)
-        y_min = min(y_min, y)
-        z_min = min(z_min, z)
         
     assign_pairs = {}
     A = []
@@ -39,16 +31,13 @@ def Parse(filename):
         A.append([x,y])
         assign_pairs[j] = int(s.pop(0))
         j+=1
-        x_max = max(x_max, x)
-        y_max = max(y_max, y)
-        x_min = min(x_min, x)
-        y_min = min(y_min, y)
     f.close()
-    return C,A,assign_pairs, [[x_min,y_min,z_min],[x_max,y_max,z_max]]
+    return C,A,assign_pairs
 
-def find_bbox(C_3D):
-    max_pt = [max(pt[i] for pt in C_3D) for i in range(3)]
-    min_pt = [min(pt[i] for pt in C_3D) for i in range(3)]
+def find_bbox(pts):
+    #supposed to handle a mixture of 2d and 3d points
+    max_pt = [max(pt[i] for pt in pts if len(pt) > i) for i in range(3)]
+    min_pt = [min(pt[i] for pt in pts if len(pt) > i) for i in range(3)]
     return min_pt, max_pt
 
 def find_extent(bbox):
@@ -109,7 +98,8 @@ def power_cells(C_3D, bbox):
             if region != []]
 
 def power_cells_fromfile(filename):
-    C_3D, A, assign_pairs, bbox = Parse(filename)
+    C_3D, A, assign_pairs = Parse(filename)
+    bbox = find_bbox(C_3D+A)
     return power_cells(C_3D, bbox)
 
     
