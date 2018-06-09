@@ -420,10 +420,9 @@ def get_approx_boundary(A):
 
 
 def clip(polygons, boundary):
+    #boundary is a multipolygon
     # clipped = polygons          # not used
     new_clipped = []
-    if boundary.geom_type =='Polygon':
-        boundary = [boundary]
     for b in boundary:
         for i in range(len(polygons)):
             p = polygons[i]
@@ -438,49 +437,18 @@ def clip(polygons, boundary):
     #     print(p)
     return new_clipped
 
-
-def plot_helperGNUplot_fromfile(
-    input_filename,
-    which_state,
-    boundary_shapefilename,
-    boundary_census_shapefile_name,
-    census_assign_filename,
-    output_filename,
-):
-    C_3D, A, polygons, bbox = ParseGNUplot(input_filename)
-
-    boundary = state_shape.read(which_state, boundary_shapefilename)
-    clipped_polygons = clip(polygons, boundary)
-
-    boundary_census_assign = Parse_census_assign(census_assign_filename)
-    GNUplot(
-        C_3D,
-        A,
-        boundary,
-        clipped_polygons,
-        polygons,
-        bbox,
-        output_filename,
-        boundary_census_shapefile_name,
-        boundary_census_assign,
-    )  #
-
-
 def plot_helperGNUplot(
     C_3D,
     A,
     polygons,
     bbox,
-    which_state,
-    boundary_shapefilename,
+    boundary, #of state
     boundary_census_shapefile_name,
     census_assign_filename,
     output_filename,
 ):
-    boundary = state_shape.read(which_state, boundary_shapefilename)
 
     clipped_polygons = clip(polygons, boundary)
-
     boundary_census_assign = Parse_census_assign(census_assign_filename)
 
     GNUplot(
