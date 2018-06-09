@@ -55,6 +55,7 @@ data/TX_census_blocks $(OUT)/census_block/TX $(OUT)/prepare_ILP/TX $(OUT)/main_s
 
 ### process census data files
 $(OUT)/census_block/%: data/%_census_blocks census_block.py
+	mkdir -p $(OUT)/census_block
 	python3 census_block.py data/$*_census_blocks/tabblock2010_$(POPID)_pophu $@
 
 ### do_redistrict
@@ -74,6 +75,7 @@ $(OUT)/do_redistrict/TX: DISTRICTS = 36
 ### prepare_ILP
 
 $(OUT)/prepare_ILP/%: $(OUT)/do_redistrict/% data/%_census_blocks/* prepare_ILP.py
+	mkdir -p $(OUT)/prepare_ILP
 	python3 prepare_ILP.py data/$*_census_blocks/tabblock2010_$(POPID)_pophu $< $@
 	test -s $@
 
@@ -86,6 +88,7 @@ SPLIT_PULP = reunification/ILP/split_pulp.py
 SOLVER = gurobi
 
 $(OUT)/split_pulp/%: $(OUT)/prepare_ILP/% $(SPLIT_PULP)
+	mkdir -p $(OUT)/split_pulp
 	python3 $(SPLIT_PULP) $(SOLVER) $< $@ $@.log
 
 .PRECIOUS: $(OUT)/split_pulp/%
@@ -93,6 +96,7 @@ $(OUT)/split_pulp/%: $(OUT)/prepare_ILP/% $(SPLIT_PULP)
 ### main_script
 
 $(OUT)/main_script/%: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_500k* data/%_census_blocks/* $(OUT)/split_pulp/% main_script.py
+	mkdir -p $(OUT)/main_script
 	python3 main_script.py $* $(OUT)/do_redistrict/$* shapestate_data/cb_2017_us_state_500k data/$*_census_blocks/tabblock2010_$(POPID)_pophu $(OUT)/split_pulp/$* $@
 
 # get cb_2017_us_state_500k from
@@ -104,6 +108,7 @@ $(OUT)/main_script/%: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_50
 
 # $(OUT)/gnuplot/%.pdf: $(OUT)/main_script/%
 $(OUT)/main_script/%.pdf: $(OUT)/main_script/%
+	mkdir -p $(OUT)/gnuplot
 	gnuplot	$<
 
 # generate_images_IL:
