@@ -52,6 +52,8 @@ IL_POPID = 17
 NY_POPID = 36
 TX_POPID = 48
 
+RI_POPID = 44
+
 data/%_census_blocks:
 	wget "https://www2.census.gov/geo/tiger/TIGER2010BLKPOPHU/tabblock2010_$($*_POPID)_pophu.zip"
 	mkdir -p data/$*_census_blocks
@@ -91,6 +93,8 @@ IL_DISTRICTS = 18
 NY_DISTRICTS = 27
 TX_DISTRICTS = 36
 
+RI_DISTRICTS = 3
+
 $(OUT)/do_redistrict/%: $(OUT)/census_block/% do_redistrict
 	mkdir -p $(OUT)/do_redistrict
 	./do_redistrict $($*_DISTRICTS) $< > $@
@@ -101,7 +105,7 @@ $(OUT)/do_redistrict/%: $(OUT)/census_block/% do_redistrict
 ################# 3. prepare_ILP.py
 #################
 
-$(OUT)/prepare_ILP/%: $(OUT)/do_redistrict/% data/%_census_blocks/* prepare_ILP.py
+$(OUT)/prepare_ILP/%: $(OUT)/do_redistrict/% data/%_census_blocks prepare_ILP.py
 	mkdir -p $(OUT)/prepare_ILP
 	python3 prepare_ILP.py data/$*_census_blocks/tabblock2010_$($*_POPID)_pophu $< $@
 	test -s $@
@@ -127,7 +131,7 @@ $(OUT)/split_pulp/%: $(OUT)/prepare_ILP/% $(SPLIT_PULP)
 
 ## main_script with reunification
 
-$(OUT)/main_script/%: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_500k* data/%_census_blocks/* $(OUT)/split_pulp/% main_script.py
+$(OUT)/main_script/%: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_500k* data/%_census_blocks $(OUT)/split_pulp/% main_script.py
 	mkdir -p $(OUT)/main_script
 	python3 main_script.py $* $(OUT)/do_redistrict/$* shapestate_data/cb_2017_us_state_500k data/$*_census_blocks/tabblock2010_$($*_POPID)_pophu $(OUT)/split_pulp/$* $@
 
@@ -135,7 +139,7 @@ $(OUT)/main_script/%: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_50
 
 ## TODO: main_script without reunification
 
-# $(OUT)/main_script/%: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_500k* data/%_census_blocks/* $(OUT)/split_pulp/% main_script.py
+# $(OUT)/main_script/%: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_500k* data/%_census_blocks $(OUT)/split_pulp/% main_script.py
 # 	mkdir -p $(OUT)/main_script
 # 	python3 main_script.py $* $(OUT)/do_redistrict/$* shapestate_data/cb_2017_us_state_500k data/$*_census_blocks/tabblock2010_$($*_POPID)_pophu $(OUT)/split_pulp/$* $@
 
