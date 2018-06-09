@@ -10,49 +10,46 @@ import sys
 # from matplotlib import colors as mcolors
 import Voronoi_boundaries as vb
 import main_plot as mplot
+import state_shape
 
 if __name__ == "__main__":
-    if len(sys.argv) == 7:
         state_abbreviation = sys.argv[1]
-        C_3D, A, assign_pairs, bbox = vb.Parse(sys.argv[2])
+        C_3D, A, assign_pairs = vb.Parse(sys.argv[2])
+        L = []
+        state_boundary = state_shape.read(state_abbreviation, sys.argv[3])
+        for p in state_boundary:
+            L = L + list(p.exterior.coords)
+        bbox = vb.find_bbox(C_3D+L)
         power_cells = vb.power_cells_fromfile(sys.argv[2])
-        # mplot.plot_helperVoronoi(C_3D, A, assign_pairs, bbox,
-        #                          sys.argv[5]+"voronoi")
-        mplot.plot_helperGNUplot(
-            C_3D,
-            A,
-            power_cells,
-            bbox,
-            state_abbreviation,
-            sys.argv[3],
-            sys.argv[4],
-            sys.argv[5],
-            sys.argv[6],
-        )
-    elif len(sys.argv) == 5:
-        state_abbreviation = sys.argv[1]
-        C_3D, A, assign_pairs, bbox = vb.Parse(sys.argv[2])
-        power_cells = vb.power_cells_fromfile(sys.argv[2])
-        # mplot.plot_helperVoronoi(C_3D, A, assign_pairs, bbox,
-        #                          sys.argv[5]+"voronoi")
-        mplot.plot_helperGNUplot(
-            C_3D,
-            A,
-            power_cells,
-            bbox,
-            state_abbreviation,
-            sys.argv[3],
-            "",
-            "",
-            sys.argv[4]
-        )
-    else:
-        print(
-            "Use: python3 ",
-            sys.argv[0],
-            "[STATE ABBREV] [output redistrict.c++ filename] [state shape file name] [polygons_boundary_census_block_filename] [assignment_boundary_census_block_filename] [output file name]",
-        )
-        exit(-1)
+        if len(sys.argv) == 7:
+                mplot.plot_helperGNUplot(
+                        C_3D,
+                        A,
+                        power_cells,
+                        bbox,
+                        state_boundary,
+                        sys.argv[4],
+                        sys.argv[5],
+                        sys.argv[6],
+                        )
+        elif len(sys.argv) == 5:
+                mplot.plot_helperGNUplot(
+                C_3D,
+                A,
+                power_cells,
+                bbox,
+                state_boundary,
+                "",
+                "",
+                sys.argv[4]
+                )
+        else:
+                print(
+                "Use: python3 ",
+                        sys.argv[0],
+                        "[STATE ABBREV] [output redistrict.c++ filename] [state shape file name] [polygons_boundary_census_block_filename] [assignment_boundary_census_block_filename] [output file name]",
+                        )
+                exit(-1)
 
     # mplot.plot_helperGNUplot_fromfile(sys.argv[5]+"voronoi",
     #                                   sys.argv[2], "", "",
