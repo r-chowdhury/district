@@ -74,7 +74,7 @@ shapestate_data/cb_2017_us_state_500k.shp:
 	mkdir -p shapestate_data
 	unzip cb_2017_us_state_500k.zip -d shapestate_data
 	rm cb_2017_us_state_500k.zip
-	test -s shapestate_data/cb_2017_us_state_500k.shp
+	test -s $@
 
 .PRECIOUS: shapestate_data/cb_2017_us_state_500k.shp
 
@@ -85,6 +85,7 @@ shapestate_data/cb_2017_us_state_500k.shp:
 $(OUT)/census_block/%: data/%_census_blocks census_block.py
 	mkdir -p $(OUT)/census_block
 	python3 census_block.py data/$*_census_blocks/tabblock2010_$($(*)_POPID)_pophu $@
+	test -s $@
 
 .PRECIOUS: $(OUT)/census_block/%
 
@@ -104,6 +105,7 @@ RI_DISTRICTS = 3
 $(OUT)/do_redistrict/%: $(OUT)/census_block/% do_redistrict
 	mkdir -p $(OUT)/do_redistrict
 	./do_redistrict $($*_DISTRICTS) $< > $@
+	test -s $@
 
 .PRECIOUS: $(OUT)/do_redistrict/%
 
@@ -128,6 +130,7 @@ SOLVER = gurobi
 $(OUT)/split_pulp/%: $(OUT)/prepare_ILP/% $(SPLIT_PULP)
 	mkdir -p $(OUT)/split_pulp
 	python3 $(SPLIT_PULP) $(SOLVER) $< $@ $@.log
+	test -s $@
 
 .PRECIOUS: $(OUT)/split_pulp/%
 
@@ -140,6 +143,7 @@ $(OUT)/split_pulp/%: $(OUT)/prepare_ILP/% $(SPLIT_PULP)
 $(OUT)/main_script/%_blocks: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_500k* data/%_census_blocks $(OUT)/split_pulp/% main_script.py
 	mkdir -p $(OUT)/main_script
 	python3 main_script.py $* $(OUT)/do_redistrict/$* shapestate_data/cb_2017_us_state_500k data/$*_census_blocks/tabblock2010_$($*_POPID)_pophu $(OUT)/split_pulp/$* $@
+	test -s $@
 
 .PRECIOUS: $(OUT)/main_script/%_blocks
 
@@ -148,6 +152,7 @@ $(OUT)/main_script/%_blocks: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_s
 $(OUT)/main_script/%_districts: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_500k* data/%_census_blocks $(OUT)/split_pulp/% main_script.py
 	mkdir -p $(OUT)/main_script
 	python3 main_script.py $* $(OUT)/do_redistrict/$* shapestate_data/cb_2017_us_state_500k $@
+	test -s $@
 
 #################
 ################# 6. gnuplot
@@ -161,6 +166,7 @@ $(OUT)/main_script/%_districts: $(OUT)/do_redistrict/% shapestate_data/cb_2017_u
 $(OUT)/main_script/%.pdf: $(OUT)/main_script/%
 	mkdir -p $(OUT)/gnuplot
 	gnuplot	$<
+	test -s $@
 
 #################
 ################# 0. COMPILATION
