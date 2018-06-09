@@ -9,8 +9,9 @@ import join
 import time # for debugging
 import sys
 
-def test(shapefilename, assignment_filename):
-    G, cells, C_3D = district_graph.get(assignment_filename)
+def test(state_abbreviation, state_boundary_shapefilename, census_shapefilename, assignment_filename):
+    G, cells, C_3D = district_graph.get(state_abbreviation, state_boundary_shapefilename, assignment_filename)
+    
     def merge(x,y):
         relevant_district_items = y[1]
         district2pop = x[1]
@@ -37,11 +38,13 @@ def test(shapefilename, assignment_filename):
     d = {block.ID:(block, rel) for block,rel in L}
     print("time 6 ", time.clock() - start_time)
     start_time = time.clock()
-    for id, pop_assignment in initial_population_assignment.gen(assignment_filename):
-        if id in d:
-            for item in d[id][1]:
-                item.population = pop_assignment[item.ID] if item.ID in pop_assignment else 0
-            yield d[id]
+    power_diagram_result = {id:pop_assignment for id, pop_assignment in initial_population_assignment.gen(assignment_filename)}
+    #Here, item.population is the population of the block assigned to the district by the balanced solution
+    #If the block is not represented in power_diagram_result, the block's population is zero.
+    for block, rel in L:
+            for item in rel:
+                item.population = power_diagram_result[block.id].get(item.ID, 0) if id in power_diagram_result else 0
+            yield block, rel
     print("time 7 ", time.clock() - start_time)
             
     ####it = join.gen(merge, initial_population_assignment.gen(assignment_filename), lambda x:x[0], iter(census_block_plus_collection), lambda x:x[0].ID)
@@ -52,12 +55,14 @@ def test(shapefilename, assignment_filename):
 
 
 args = sys.argv[1:]
+state_abbreviation = args.pop(0)
+state_boundary_shapefilename = args.pop(0)
 shapefilename = args.pop(0)
 assignment_filename = args.pop(0)
 output_filename = args.pop(0)
 fout = open(output_filename, 'w')
 counter = 0
-for census_block, relevant_district_items in test(shapefilename, assignment_filename):
+for census_block, relevant_district_items in test(state_abbreviation, state_boundary_shapefilename, shapefilename, assignment_filename):
     if counter % 10000 == 0: print("counter", counter)
     counter = counter + 1
     fout.write(str(census_block.ID)+" ")
