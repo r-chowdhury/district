@@ -17,15 +17,20 @@ CPPFLAGS = -O3 -Wall -std=c++1z
 #CFLAGS = -O4 -DNDEBUG -DNO_ZERO_CYCLES
 BIN=cs2 do_redistrict test_initial_centers test_redistrict test_find_weights
 
-.DELETE_ON_ERROR:
-# "If .DELETE_ON_ERROR is mentioned as a target anywhere in the
-# makefile, then make will delete the target of a rule if it has
-# changed and its recipe exits with a nonzero exit status, just as it
-# does when it receives a signal. See Errors in Recipes.
+# want intermediate dependent files to be retained even if later commands fail.
+# .PRECIOUS -- not ideal because file will be retained even if after its command is interupted
+# .SECONDARY -- cannot be set directly for files created by pattern rules
+# Our work-around is to set .SECONDARY for _all_ files, below.
 
 .SECONDARY:
 # https://stackoverflow.com/questions/17625394/secondary-for-a-pattern-rule-with-gnu-make
 # "You can use .SECONDARY with no prerequisites, this will set all intermediate targets behave as SECONDARY.
+
+.DELETE_ON_ERROR:
+# "If .DELETE_ON_ERROR is mentioned as a target anywhere in the
+# makefile, then make will delete the target of a rule if it has
+# changed and its recipe exits with a nonzero exit status, just as it
+# does when it receives a signal. 
 
 ####
 # Expecting the following folders to exist:
