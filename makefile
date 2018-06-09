@@ -57,6 +57,8 @@ data/%_census_blocks:
 	unzip tabblock2010_$(POPID)_pophu.zip -d data/$*_census_blocks
 	rm tabblock2010_$(POPID)_pophu.zip
 
+.PRECIOUS: data/%_census_blocks
+
 data/AL_census_blocks $(OUT)/prepare_ILP/AL: POPID = 01
 data/CA_census_blocks $(OUT)/prepare_ILP/CA: POPID = 06
 data/FL_census_blocks $(OUT)/prepare_ILP/FL: POPID = 12
