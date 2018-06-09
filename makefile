@@ -45,7 +45,7 @@ BIN=cs2 do_redistrict test_initial_centers test_redistrict test_find_weights
 
 OUT = makefile_outputs
 
-STATES = AL CA FL IL NY RI
+STATES = AL CA FL IL NY TX RI
 # RI is just for testing
 
 # for "make pdfs"
