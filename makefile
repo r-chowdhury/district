@@ -32,7 +32,9 @@ OUT = makefile_outputs
 
 # pdfs: $(OUT)/gnuplot/AL.pdf $(OUT)/gnuplot/FL.pdf $(OUT)/gnuplot/IL.pdf $(OUT)/gnuplot/NY.pdf $(OUT)/gnuplot/CA.pdf
 
-pdfs: $(OUT)/main_script/AL.pdf $(OUT)/main_script/FL.pdf $(OUT)/main_script/IL.pdf $(OUT)/main_script/NY.pdf $(OUT)/main_script/CA.pdf
+STATES = AL CA FL IL NY
+
+pdfs: $(STATES:%=$(OUT)/main_script/%.pdf)
 
 #################
 ################# 1. wget census data files  
@@ -41,22 +43,22 @@ pdfs: $(OUT)/main_script/AL.pdf $(OUT)/main_script/FL.pdf $(OUT)/main_script/IL.
 ## get shape files from https://www2.census.gov/geo/tiger/TIGER2010BLKPOPHU/...
 ## don't add these files directly to the repository (upload is too slow)
 
-downloads: data/AL_census_blocks data/CA_census_blocks data/FL_census_blocks data/IL_census_blocks data/NY_census_blocks data/TX_census_blocks
+downloads: $(STATES:%=data/%_census_blocks)
+
+AL_POPID = 01
+CA_POPID = 06
+FL_POPID = 12
+IL_POPID = 17
+NY_POPID = 36
+TX_POPID = 48
 
 data/%_census_blocks:
-	wget "https://www2.census.gov/geo/tiger/TIGER2010BLKPOPHU/tabblock2010_$(POPID)_pophu.zip"
+	wget "https://www2.census.gov/geo/tiger/TIGER2010BLKPOPHU/tabblock2010_$($*_POPID)_pophu.zip"
 	mkdir -p data/$*_census_blocks
-	unzip tabblock2010_$(POPID)_pophu.zip -d data/$*_census_blocks
-	rm tabblock2010_$(POPID)_pophu.zip
+	unzip tabblock2010_$($*_POPID)_pophu.zip -d data/$*_census_blocks
+	rm tabblock2010_$($*_POPID)_pophu.zip
 
 .PRECIOUS: data/%_census_blocks
-
-data/AL_census_blocks $(OUT)/census_block/AL $(OUT)/prepare_ILP/AL $(OUT)/main_script/AL: POPID = 01
-data/CA_census_blocks $(OUT)/census_block/CA $(OUT)/prepare_ILP/CA $(OUT)/main_script/CA: POPID = 06
-data/FL_census_blocks $(OUT)/census_block/FL $(OUT)/prepare_ILP/FL $(OUT)/main_script/FL: POPID = 12
-data/IL_census_blocks $(OUT)/census_block/IL $(OUT)/prepare_ILP/IL $(OUT)/main_script/IL: POPID = 17
-data/NY_census_blocks $(OUT)/census_block/NY $(OUT)/prepare_ILP/NY $(OUT)/main_script/NY: POPID = 36
-data/TX_census_blocks $(OUT)/census_block/TX $(OUT)/prepare_ILP/TX $(OUT)/main_script/TX: POPID = 48
 
 # and main_script.py below depends on cb_2017_us_state_500k
 
@@ -74,7 +76,7 @@ shapestate_data/cb_2017_us_state_500k.shp:
 
 $(OUT)/census_block/%: data/%_census_blocks census_block.py
 	mkdir -p $(OUT)/census_block
-	python3 census_block.py data/$*_census_blocks/tabblock2010_$(POPID)_pophu $@
+	python3 census_block.py data/$*_census_blocks/tabblock2010_$($*_POPID)_pophu $@
 
 .PRECIOUS: $(OUT)/census_block/%
 
@@ -82,18 +84,18 @@ $(OUT)/census_block/%: data/%_census_blocks census_block.py
 ################# 3. do_redistrict
 #################
 
+AL_DISTRICTS = 7
+CA_DISTRICTS = 53
+FL_DISTRICTS = 27
+IL_DISTRICTS = 18
+NY_DISTRICTS = 27
+TX_DISTRICTS = 36
+
 $(OUT)/do_redistrict/%: $(OUT)/census_block/% do_redistrict
 	mkdir -p $(OUT)/do_redistrict
-	./do_redistrict $(DISTRICTS) $< > $@
+	./do_redistrict $($*_DISTRICTS) $< > $@
 
 .PRECIOUS: $(OUT)/do_redistrict/%
-
-$(OUT)/do_redistrict/AL: DISTRICTS = 7
-$(OUT)/do_redistrict/CA: DISTRICTS = 53
-$(OUT)/do_redistrict/FL: DISTRICTS = 27
-$(OUT)/do_redistrict/IL: DISTRICTS = 18
-$(OUT)/do_redistrict/NY: DISTRICTS = 27
-$(OUT)/do_redistrict/TX: DISTRICTS = 36
 
 #################
 ################# 3. prepare_ILP.py
@@ -101,7 +103,7 @@ $(OUT)/do_redistrict/TX: DISTRICTS = 36
 
 $(OUT)/prepare_ILP/%: $(OUT)/do_redistrict/% data/%_census_blocks/* prepare_ILP.py
 	mkdir -p $(OUT)/prepare_ILP
-	python3 prepare_ILP.py data/$*_census_blocks/tabblock2010_$(POPID)_pophu $< $@
+	python3 prepare_ILP.py data/$*_census_blocks/tabblock2010_$($*_POPID)_pophu $< $@
 	test -s $@
 
 .PRECIOUS: $(OUT)/prepare_ILP/%
@@ -127,7 +129,7 @@ $(OUT)/split_pulp/%: $(OUT)/prepare_ILP/% $(SPLIT_PULP)
 
 $(OUT)/main_script/%: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_500k* data/%_census_blocks/* $(OUT)/split_pulp/% main_script.py
 	mkdir -p $(OUT)/main_script
-	python3 main_script.py $* $(OUT)/do_redistrict/$* shapestate_data/cb_2017_us_state_500k data/$*_census_blocks/tabblock2010_$(POPID)_pophu $(OUT)/split_pulp/$* $@
+	python3 main_script.py $* $(OUT)/do_redistrict/$* shapestate_data/cb_2017_us_state_500k data/$*_census_blocks/tabblock2010_$($*_POPID)_pophu $(OUT)/split_pulp/$* $@
 
 .PRECIOUS: $(OUT)/main_script/%
 
@@ -135,7 +137,7 @@ $(OUT)/main_script/%: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_50
 
 # $(OUT)/main_script/%: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_500k* data/%_census_blocks/* $(OUT)/split_pulp/% main_script.py
 # 	mkdir -p $(OUT)/main_script
-# 	python3 main_script.py $* $(OUT)/do_redistrict/$* shapestate_data/cb_2017_us_state_500k data/$*_census_blocks/tabblock2010_$(POPID)_pophu $(OUT)/split_pulp/$* $@
+# 	python3 main_script.py $* $(OUT)/do_redistrict/$* shapestate_data/cb_2017_us_state_500k data/$*_census_blocks/tabblock2010_$($*_POPID)_pophu $(OUT)/split_pulp/$* $@
 
 
 #################
