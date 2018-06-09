@@ -126,6 +126,10 @@ $(OUT)/main_script/%: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_50
 ################# 6. gnuplot (with reunification)
 #################
 
+# todo? modify main_script to accept gnuplot output file,
+# or modify so gnuplot outputs on stdout,
+# so we can put the gnuplot output files in a separate directory?
+
 # $(OUT)/gnuplot/%.pdf: $(OUT)/main_script/%
 $(OUT)/main_script/%.pdf: $(OUT)/main_script/%
 	mkdir -p $(OUT)/gnuplot
@@ -137,6 +141,9 @@ $(OUT)/main_script/%.pdf: $(OUT)/main_script/%
 # 	gnuplot	gnuplot_data/IL_gnuplot 
 # 	gnuplot	gnuplot_data/IL_gnuplot_noreunification
 
+#################
+################# 0. COMPILATION
+#################
 
 clean:
 	rm -f $(BIN) *.o *~
