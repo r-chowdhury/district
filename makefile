@@ -129,17 +129,17 @@ $(OUT)/main_script/%: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_50
 	mkdir -p $(OUT)/main_script
 	python3 main_script.py $* $(OUT)/do_redistrict/$* shapestate_data/cb_2017_us_state_500k data/$*_census_blocks/tabblock2010_$(POPID)_pophu $(OUT)/split_pulp/$* $@
 
-## with reunification
-
-$(OUT)/main_script/%: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_500k* data/%_census_blocks/* $(OUT)/split_pulp/% main_script.py
-	mkdir -p $(OUT)/main_script
-	python3 main_script.py $* $(OUT)/do_redistrict/$* shapestate_data/cb_2017_us_state_500k data/$*_census_blocks/tabblock2010_$(POPID)_pophu $(OUT)/split_pulp/$* $@
-
-
 .PRECIOUS: $(OUT)/main_script/%
 
+## TODO: main_script without reunification
+
+# $(OUT)/main_script/%: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_500k* data/%_census_blocks/* $(OUT)/split_pulp/% main_script.py
+# 	mkdir -p $(OUT)/main_script
+# 	python3 main_script.py $* $(OUT)/do_redistrict/$* shapestate_data/cb_2017_us_state_500k data/$*_census_blocks/tabblock2010_$(POPID)_pophu $(OUT)/split_pulp/$* $@
+
+
 #################
-################# 6. gnuplot (with reunification)
+################# 6. gnuplot
 #################
 
 # todo? modify main_script to accept gnuplot output file,
