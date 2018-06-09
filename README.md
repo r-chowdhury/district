@@ -17,7 +17,7 @@ Extract census blocks and populations
   python3  census_block.py <census block shape filename> <output_filename>
 where <census block shape filename> is name of shape file (not
   including suffix) specifying census blocks, e.g.
-          abblock010_44_pophu/tabblock2010_44_pophu
+          tabblock010_44_pophu/tabblock2010_44_pophu
 The directory can be downloaded as a zip file from https://www.census.gov/geo/maps-data/data/tiger-data.html
 (Select Population & Housing Unit Counts -- Blocks, then select a state.)
 
@@ -25,18 +25,9 @@ The output file written has one line per client point.
 It specifies the ID number of the corresponding census block, the x coordinate (longitude), the y coordinate
 (latitude), and the population assigned to that point.
 The script selects the point to be the centroid of the census block
-
-shape.  (WHAT HAPPENS IF THE SHAPE CONSISTS OF MULTIPLE POLYGONS?)
-
-To launch programs from the makefile:
-
-make run_redistrict STATE=<STATE>  : runs do_redistrict and puts the output on cluster_data
-make run_prepare_ILP STATE=<STATE> : generates the file for preparing the ILP (output is saved in folder ILP_data
-make run_ILP STATE=<STATE> : run the ILP on the generated file, output is saved on ILP_data
-make generate_images STATE=<STATE> : run the python scripts to generate the gnuplot files and then run the gnuplot files and save the pdf in the folder gnuplot_data/
-
-
-
+shape.  If the census block consists of multiple polygons, the script
+pretends each polygon is its own census block, and pretends the
+population of each is zero.
 
 Also, extract the boundary polygons of a state:
   python3 read_state_shapefile.py <ST> <input directory name>
@@ -51,7 +42,7 @@ is treated separately, and the population is treated as zero.
 Next, compute the clustering using
    do_redistrict <k> <input_filename>
 where the first argument is the number of clusters to find, and the
-input file is in the format of the output of the read_census_blocks.py script.
+input file is in the format of the output of the census_block.py script.
 This program sends some text indicating progress to standard err, and,
 when it terminates, sends the output to standard out.
  Output format:
