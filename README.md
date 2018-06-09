@@ -12,6 +12,8 @@ The above copyright notice and this permission notice shall be included in all c
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+Before doing any US states, download cb_2016_us_state_500k.
+(More details needed for this step.)
 
 Extract census blocks and populations
   python3  census_block.py <census block shape filename> <output_filename>
@@ -28,16 +30,6 @@ The script selects the point to be the centroid of the census block
 shape.  If the census block consists of multiple polygons, the script
 pretends each polygon is its own census block, and pretends the
 population of each is zero.
-
-Also, extract the boundary polygons of a state:
-  python3 read_state_shapefile.py <ST> <input directory name>
- where <ST> is the two-letter abbreviation for a state, and <input directory name>
-is the name of a directory (not including suffix) giving shape records for
-  state boundaries, e.g. cb_2016_us_state_500k as downloaded from clear
-
-shape. (If a census block consists of multiple polygons, each polygon
-is treated separately, and the population is treated as zero.
-
 
 Next, compute the clustering using
    do_redistrict <k> <input_filename>
