@@ -130,9 +130,9 @@ $(STATES:%=$(OUT)/do_redistrict/%): $(OUT)/do_redistrict/%: $(OUT)/census_block/
 ################# 3. prepare_ILP.py
 #################
 
-$(STATES:%=$(OUT)/prepare_ILP/%): $(OUT)/prepare_ILP/%: $(OUT)/do_redistrict/% data/%_census_blocks prepare_ILP.py
+$(STATES:%=$(OUT)/prepare_ILP/%): $(OUT)/prepare_ILP/%: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_500k* data/%_census_blocks prepare_ILP.py
 	@ mkdir -p $(OUT)/prepare_ILP
-	python3 prepare_ILP.py data/$*_census_blocks/tabblock2010_$($*_POPID)_pophu $< $@
+	python3 prepare_ILP.py $* shapestate_data/cb_2017_us_state_500k data/$*_census_blocks/tabblock2010_$($*_POPID)_pophu $< $@
 	@ test -s $@
 
 # .PRECIOUS: $(OUT)/prepare_ILP/%
