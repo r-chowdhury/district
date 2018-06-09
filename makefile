@@ -61,6 +61,7 @@ $(OUT)/census_block/%: data/%_census_blocks census_block.py
 ### do_redistrict
 
 $(OUT)/do_redistrict/%: $(OUT)/census_block/% do_redistrict
+	mkdir -p $(OUT)/do_redistrict
 	./do_redistrict $(DISTRICTS) $< > $@
 
 .PRECIOUS: $(OUT)/do_redistrict/%
