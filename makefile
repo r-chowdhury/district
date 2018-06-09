@@ -30,7 +30,8 @@ BIN=cs2 do_redistrict test_initial_centers test_redistrict test_find_weights
 
 OUT = makefile_outputs
 
-STATES = AL CA FL IL NY
+STATES = AL CA FL IL NY RI
+# RI is just for testing
 
 # for "make pdfs"
 pdfs: $(STATES)
@@ -55,22 +56,23 @@ IL_POPID = 17
 NY_POPID = 36
 TX_POPID = 48
 
-# for testing
 RI_POPID = 44
 
-data/%_census_blocks:
-	wget https://www2.census.gov/geo/tiger/TIGER2010BLKPOPHU/tabblock2010_$($(*)_POPID)_pophu.zip
+$(STATES:%=data/%_census_blocks): data/%_census_blocks:
+	rm -rf tabblock2010_$($*_POPID)_pophu.zip
+	wget https://www2.census.gov/geo/tiger/TIGER2010BLKPOPHU/tabblock2010_$($*_POPID)_pophu.zip
 	mkdir -p data/$*_census_blocks
 	unzip tabblock2010_$($*_POPID)_pophu.zip -d data/$*_census_blocks
 	rm tabblock2010_$($*_POPID)_pophu.zip
-	test -s data/$*_census_blocks/tabblock2010_$($(*)_POPID)_pophu.shp
+	test -s data/$*_census_blocks/tabblock2010_$($*_POPID)_pophu.shp
 
 .PRECIOUS: data/%_census_blocks
 
 # and main_script.py below depends on cb_2017_us_state_500k
 
 shapestate_data/cb_2017_us_state_500k.shp:
-	wget "http://www2.census.gov/geo/tiger/GENZ2017/shp/cb_2017_us_state_500k.zip"
+	rm -rf cb_2017_us_state_500k.zip
+	wget http://www2.census.gov/geo/tiger/GENZ2017/shp/cb_2017_us_state_500k.zip
 	mkdir -p shapestate_data
 	unzip cb_2017_us_state_500k.zip -d shapestate_data
 	rm cb_2017_us_state_500k.zip
@@ -82,9 +84,9 @@ shapestate_data/cb_2017_us_state_500k.shp:
 ################# 2. census_block.py  
 #################
 
-$(OUT)/census_block/%: data/%_census_blocks census_block.py
+$(STATES:%=$(OUT)/census_block/%): $(OUT)/census_block/%: data/%_census_blocks census_block.py
 	mkdir -p $(OUT)/census_block
-	python3 census_block.py data/$*_census_blocks/tabblock2010_$($(*)_POPID)_pophu $@
+	python3 census_block.py data/$*_census_blocks/tabblock2010_$($*_POPID)_pophu $@
 	test -s $@
 
 .PRECIOUS: $(OUT)/census_block/%
@@ -102,7 +104,7 @@ TX_DISTRICTS = 36
 
 RI_DISTRICTS = 3
 
-$(OUT)/do_redistrict/%: $(OUT)/census_block/% do_redistrict
+$(STATES:%=$(OUT)/do_redistrict/%): $(OUT)/do_redistrict/%: $(OUT)/census_block/% do_redistrict
 	mkdir -p $(OUT)/do_redistrict
 	./do_redistrict $($*_DISTRICTS) $< > $@
 	test -s $@
@@ -113,7 +115,7 @@ $(OUT)/do_redistrict/%: $(OUT)/census_block/% do_redistrict
 ################# 3. prepare_ILP.py
 #################
 
-$(OUT)/prepare_ILP/%: $(OUT)/do_redistrict/% data/%_census_blocks prepare_ILP.py
+$(STATES:%=$(OUT)/prepare_ILP/%): $(OUT)/prepare_ILP/%: $(OUT)/do_redistrict/% data/%_census_blocks prepare_ILP.py
 	mkdir -p $(OUT)/prepare_ILP
 	python3 prepare_ILP.py data/$*_census_blocks/tabblock2010_$($*_POPID)_pophu $< $@
 	test -s $@
@@ -127,7 +129,7 @@ $(OUT)/prepare_ILP/%: $(OUT)/do_redistrict/% data/%_census_blocks prepare_ILP.py
 SPLIT_PULP = reunification/ILP/split_pulp.py
 SOLVER = gurobi
 
-$(OUT)/split_pulp/%: $(OUT)/prepare_ILP/% $(SPLIT_PULP)
+$(STATES:%=$(OUT)/split_pulp/%): $(OUT)/split_pulp/%: $(OUT)/prepare_ILP/% $(SPLIT_PULP)
 	mkdir -p $(OUT)/split_pulp
 	python3 $(SPLIT_PULP) $(SOLVER) $< $@ $@.log
 	test -s $@
@@ -140,7 +142,7 @@ $(OUT)/split_pulp/%: $(OUT)/prepare_ILP/% $(SPLIT_PULP)
 
 ## main_script with reunification
 
-$(OUT)/main_script/%_blocks: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_500k* data/%_census_blocks $(OUT)/split_pulp/% main_script.py
+$(STATES:%=$(OUT)/main_script/%_blocks): $(OUT)/main_script/%_blocks: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_500k* data/%_census_blocks $(OUT)/split_pulp/% main_script.py
 	mkdir -p $(OUT)/main_script
 	python3 main_script.py $* $(OUT)/do_redistrict/$* shapestate_data/cb_2017_us_state_500k data/$*_census_blocks/tabblock2010_$($*_POPID)_pophu $(OUT)/split_pulp/$* $@
 	test -s $@
@@ -149,7 +151,7 @@ $(OUT)/main_script/%_blocks: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_s
 
 ## main_script without reunification
 
-$(OUT)/main_script/%_districts: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_500k* data/%_census_blocks $(OUT)/split_pulp/% main_script.py
+$(STATES:%=$(OUT)/main_script/%_districts): $(OUT)/main_script/%_districts: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_500k* data/%_census_blocks $(OUT)/split_pulp/% main_script.py
 	mkdir -p $(OUT)/main_script
 	python3 main_script.py $* $(OUT)/do_redistrict/$* shapestate_data/cb_2017_us_state_500k $@
 	test -s $@
@@ -163,7 +165,7 @@ $(OUT)/main_script/%_districts: $(OUT)/do_redistrict/% shapestate_data/cb_2017_u
 # so we can put the gnuplot output files in a separate directory?
 
 # $(OUT)/gnuplot/%.pdf: $(OUT)/main_script/%
-$(OUT)/main_script/%.pdf: $(OUT)/main_script/%
+$(STATES:%=$(OUT)/main_script/%_blocks.pdf) $(STATES:%=$(OUT)/main_script/%_districts.pdf): $(OUT)/main_script/%.pdf: $(OUT)/main_script/%
 	mkdir -p $(OUT)/gnuplot
 	gnuplot	$<
 	test -s $@
