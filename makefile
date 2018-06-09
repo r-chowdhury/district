@@ -17,6 +17,12 @@ CPPFLAGS = -O3 -Wall -std=c++1z
 #CFLAGS = -O4 -DNDEBUG -DNO_ZERO_CYCLES
 BIN=cs2 do_redistrict test_initial_centers test_redistrict test_find_weights
 
+.DELETE_ON_ERROR:
+# If .DELETE_ON_ERROR is mentioned as a target anywhere in the
+# makefile, then make will delete the target of a rule if it has
+# changed and its recipe exits with a nonzero exit status, just as it
+# does when it receives a signal. See Errors in Recipes.
+
 ####
 # Expecting the following folders to exist:
 
