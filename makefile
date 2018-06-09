@@ -30,11 +30,14 @@ BIN=cs2 do_redistrict test_initial_centers test_redistrict test_find_weights
 
 OUT = makefile_outputs
 
-# pdfs: $(OUT)/gnuplot/AL.pdf $(OUT)/gnuplot/FL.pdf $(OUT)/gnuplot/IL.pdf $(OUT)/gnuplot/NY.pdf $(OUT)/gnuplot/CA.pdf
-
 STATES = AL CA FL IL NY
 
-pdfs: $(STATES:%=$(OUT)/main_script/%.pdf)
+# for "make pdfs"
+pdfs: $(STATES)
+
+# for e.g., "make RI"
+
+$(STATES) RI: %: $(OUT)/main_script/%_blocks.pdf $(OUT)/main_script/%_districts.pdf
 
 #################
 ################# 1. wget census data files  
@@ -52,13 +55,15 @@ IL_POPID = 17
 NY_POPID = 36
 TX_POPID = 48
 
+# for testing
 RI_POPID = 44
 
 data/%_census_blocks:
-	wget "https://www2.census.gov/geo/tiger/TIGER2010BLKPOPHU/tabblock2010_$($*_POPID)_pophu.zip"
+	wget https://www2.census.gov/geo/tiger/TIGER2010BLKPOPHU/tabblock2010_$($(*)_POPID)_pophu.zip
 	mkdir -p data/$*_census_blocks
 	unzip tabblock2010_$($*_POPID)_pophu.zip -d data/$*_census_blocks
 	rm tabblock2010_$($*_POPID)_pophu.zip
+	test -s data/$*_census_blocks/tabblock2010_$($(*)_POPID)_pophu.shp
 
 .PRECIOUS: data/%_census_blocks
 
@@ -69,6 +74,7 @@ shapestate_data/cb_2017_us_state_500k.shp:
 	mkdir -p shapestate_data
 	unzip cb_2017_us_state_500k.zip -d shapestate_data
 	rm cb_2017_us_state_500k.zip
+	test -s shapestate_data/cb_2017_us_state_500k.shp
 
 .PRECIOUS: shapestate_data/cb_2017_us_state_500k.shp
 
@@ -78,7 +84,7 @@ shapestate_data/cb_2017_us_state_500k.shp:
 
 $(OUT)/census_block/%: data/%_census_blocks census_block.py
 	mkdir -p $(OUT)/census_block
-	python3 census_block.py data/$*_census_blocks/tabblock2010_$($*_POPID)_pophu $@
+	python3 census_block.py data/$*_census_blocks/tabblock2010_$($(*)_POPID)_pophu $@
 
 .PRECIOUS: $(OUT)/census_block/%
 
@@ -131,18 +137,17 @@ $(OUT)/split_pulp/%: $(OUT)/prepare_ILP/% $(SPLIT_PULP)
 
 ## main_script with reunification
 
-$(OUT)/main_script/%: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_500k* data/%_census_blocks $(OUT)/split_pulp/% main_script.py
+$(OUT)/main_script/%_blocks: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_500k* data/%_census_blocks $(OUT)/split_pulp/% main_script.py
 	mkdir -p $(OUT)/main_script
 	python3 main_script.py $* $(OUT)/do_redistrict/$* shapestate_data/cb_2017_us_state_500k data/$*_census_blocks/tabblock2010_$($*_POPID)_pophu $(OUT)/split_pulp/$* $@
 
-.PRECIOUS: $(OUT)/main_script/%
+.PRECIOUS: $(OUT)/main_script/%_blocks
 
-## TODO: main_script without reunification
+## main_script without reunification
 
-# $(OUT)/main_script/%: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_500k* data/%_census_blocks $(OUT)/split_pulp/% main_script.py
-# 	mkdir -p $(OUT)/main_script
-# 	python3 main_script.py $* $(OUT)/do_redistrict/$* shapestate_data/cb_2017_us_state_500k data/$*_census_blocks/tabblock2010_$($*_POPID)_pophu $(OUT)/split_pulp/$* $@
-
+$(OUT)/main_script/%_districts: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_500k* data/%_census_blocks $(OUT)/split_pulp/% main_script.py
+	mkdir -p $(OUT)/main_script
+	python3 main_script.py $* $(OUT)/do_redistrict/$* shapestate_data/cb_2017_us_state_500k $@
 
 #################
 ################# 6. gnuplot
@@ -156,12 +161,6 @@ $(OUT)/main_script/%: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_50
 $(OUT)/main_script/%.pdf: $(OUT)/main_script/%
 	mkdir -p $(OUT)/gnuplot
 	gnuplot	$<
-
-# generate_images_IL:
-# 	python3 main_script.py IL cluster_data/IL_do_redistrict shapestate_data/cb_2017_us_state_500k. census_data/IL_census ILP_data/IL_output_ILP gnuplot_data/IL_gnuplot
-# 	python3 main_script.py IL cluster_data/IL_do_redistrict shapestate_data/cb_2017_us_state_500k. gnuplot_data/IL_gnuplotnoreunification
-# 	gnuplot	gnuplot_data/IL_gnuplot 
-# 	gnuplot	gnuplot_data/IL_gnuplot_noreunification
 
 #################
 ################# 0. COMPILATION
