@@ -8,3 +8,4 @@ data
 gurobi.log
 google_drive
 do_redistrict
+makefile_outputs
