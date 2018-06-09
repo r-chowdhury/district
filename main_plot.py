@@ -422,6 +422,8 @@ def get_approx_boundary(A):
 def clip(polygons, boundary):
     # clipped = polygons          # not used
     new_clipped = []
+    if boundary.geom_type =='Polygon':
+        boundary = [boundary]
     for b in boundary:
         for i in range(len(polygons)):
             p = polygons[i]
