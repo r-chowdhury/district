@@ -31,16 +31,21 @@ BIN=cs2 do_redistrict test_initial_centers test_redistrict test_find_weights
 OUT = makefile_outputs
 
 # pdfs: $(OUT)/gnuplot/AL.pdf $(OUT)/gnuplot/FL.pdf $(OUT)/gnuplot/IL.pdf $(OUT)/gnuplot/NY.pdf $(OUT)/gnuplot/CA.pdf
+
 pdfs: $(OUT)/main_script/AL.pdf $(OUT)/main_script/FL.pdf $(OUT)/main_script/IL.pdf $(OUT)/main_script/NY.pdf $(OUT)/main_script/CA.pdf
 
-### data files from https://www2.census.gov/geo/tiger/TIGER2010BLKPOPHU/...
-## don't add directly to the repository (upload is too slow)
+#################
+################# 1. wget census data files  
+#################
+
+## get shape files from https://www2.census.gov/geo/tiger/TIGER2010BLKPOPHU/...
+## don't add these files directly to the repository (upload is too slow)
 
 downloads: data/AL_census_blocks data/CA_census_blocks data/FL_census_blocks data/IL_census_blocks data/NY_census_blocks data/TX_census_blocks
 
 data/%_census_blocks:
 	wget "https://www2.census.gov/geo/tiger/TIGER2010BLKPOPHU/tabblock2010_$(POPID)_pophu.zip"
-	mkdir data/$*_census_blocks
+	mkdir -p data/$*_census_blocks
 	unzip tabblock2010_$(POPID)_pophu.zip -d data/$*_census_blocks
 	rm tabblock2010_$(POPID)_pophu.zip
 
@@ -53,12 +58,19 @@ data/IL_census_blocks $(OUT)/census_block/IL $(OUT)/prepare_ILP/IL $(OUT)/main_s
 data/NY_census_blocks $(OUT)/census_block/NY $(OUT)/prepare_ILP/NY $(OUT)/main_script/NY: POPID = 36
 data/TX_census_blocks $(OUT)/census_block/TX $(OUT)/prepare_ILP/TX $(OUT)/main_script/TX: POPID = 48
 
-### process census data files
+#################
+################# 2. census_block.py  
+#################
+
 $(OUT)/census_block/%: data/%_census_blocks census_block.py
 	mkdir -p $(OUT)/census_block
 	python3 census_block.py data/$*_census_blocks/tabblock2010_$(POPID)_pophu $@
 
-### do_redistrict
+.PRECIOUS: $(OUT)/census_block/%
+
+#################
+################# 3. do_redistrict
+#################
 
 $(OUT)/do_redistrict/%: $(OUT)/census_block/% do_redistrict
 	mkdir -p $(OUT)/do_redistrict
@@ -73,7 +85,9 @@ $(OUT)/do_redistrict/IL: DISTRICTS = 18
 $(OUT)/do_redistrict/NY: DISTRICTS = 27
 $(OUT)/do_redistrict/TX: DISTRICTS = 36
 
-### prepare_ILP
+#################
+################# 3. prepare_ILP.py
+#################
 
 $(OUT)/prepare_ILP/%: $(OUT)/do_redistrict/% data/%_census_blocks/* prepare_ILP.py
 	mkdir -p $(OUT)/prepare_ILP
@@ -82,8 +96,9 @@ $(OUT)/prepare_ILP/%: $(OUT)/do_redistrict/% data/%_census_blocks/* prepare_ILP.
 
 .PRECIOUS: $(OUT)/prepare_ILP/%
 
-
-### split_pulp
+#################
+################# 4. split_pulp -- solve ILP
+#################
 
 SPLIT_PULP = reunification/ILP/split_pulp.py
 SOLVER = gurobi
@@ -94,7 +109,9 @@ $(OUT)/split_pulp/%: $(OUT)/prepare_ILP/% $(SPLIT_PULP)
 
 .PRECIOUS: $(OUT)/split_pulp/%
 
-### main_script
+#################
+################# 5. main_script (with reunification)
+#################
 
 $(OUT)/main_script/%: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_500k* data/%_census_blocks/* $(OUT)/split_pulp/% main_script.py
 	mkdir -p $(OUT)/main_script
@@ -105,7 +122,9 @@ $(OUT)/main_script/%: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_50
 
 .PRECIOUS: $(OUT)/main_script/%
 
-### gnuplot
+#################
+################# 6. gnuplot (with reunification)
+#################
 
 # $(OUT)/gnuplot/%.pdf: $(OUT)/main_script/%
 $(OUT)/main_script/%.pdf: $(OUT)/main_script/%
