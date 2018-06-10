@@ -33,15 +33,19 @@ BIN=cs2 do_redistrict test_initial_centers test_redistrict test_find_weights
 # does when it receives a signal. 
 
 ####
-# Expecting the following folders to exist:
+# will create the following folders (TODO: reorganize folders to be consistent):
 
-#   data/CA_census_blocks/tabblock2010_06_pophu 
-#     -- for all states, with correct two-letters ID and number
+#   data
+#     -- to store large downloaded census block data
+#
+#   shapestate_data
+#     -- to store cb_2017_us_state_500k files
 
 #   makefile_outputs/{census_block, do_redistrict, prepare_ILP, split_pulp, main_script, gnuplot}
-#     -- will contain output of the respective commands, under the state acronym
+#     -- to contain output of the respective commands, under the state acronym
 
 # command to make pdfs is "make pdfs"
+# or e.g. "make RI" to make pdfs for RI
 
 OUT = makefile_outputs
 
@@ -49,6 +53,7 @@ STATES = AL CA FL IL NY TX RI
 # RI is just for testing
 
 # for "make pdfs"
+
 pdfs: $(STATES)
 
 # for e.g., "make RI"
