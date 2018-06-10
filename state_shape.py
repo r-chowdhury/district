@@ -11,6 +11,6 @@ def read(state_abbreviation, shape_filename):
     x = next(x for x in sf.iterShapeRecords()  if x.record[4]==state_abbreviation)
     sh = shape(x.shape.__geo_interface__)
     if sh.geom_type =='Polygon':
-        return MultiPolygon(sh)
+        return MultiPolygon([sh])
     else: # Multipolygon
         return sh
