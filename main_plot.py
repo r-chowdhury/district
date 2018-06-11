@@ -4,7 +4,7 @@
 # import scipy.spatial as sp
 import shapely.geometry as sg
 from shapely.geometry.polygon import Polygon
-import state_shape
+# import state_shape
 import census_block
 
 # from matplotlib import colors as mcolors
@@ -369,7 +369,8 @@ def GNUplot(
     boundary_census_assign=[],
 ):
     f = open(outputfilename, "w")
-    f.write("set style fill transparent solid 0.4\n")  # alpha - Neal
+    # f.write("set style fill transparent solid 0.4\n")  # alpha + border - Neal
+    f.write("set style fill solid noborder\n")  # no border, no alpha - Neal
     for i in range(len(clipped)):
         GNUplot_nonclipped(clipped[i], f)
     for i in range(len(polygons)):
