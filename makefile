@@ -58,7 +58,7 @@ pdfs: $(STATES)
 
 # for e.g., "make RI"
 
-$(STATES) RI: %: $(OUT)/main_script/%_blocks.pdf $(OUT)/main_script/%_districts.pdf
+$(STATES): %: $(OUT)/main_script/%_blocks.pdf $(OUT)/main_script/%_districts.pdf
 
 #################
 ################# 1. wget census data files  
@@ -162,7 +162,7 @@ $(STATES:%=$(OUT)/split_pulp/%): $(OUT)/split_pulp/%: $(OUT)/prepare_ILP/% $(SPL
 
 ## main_script with reunification
 
-$(STATES:%=$(OUT)/main_script/%_blocks): $(OUT)/main_script/%_blocks: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_500k* data/%_census_blocks $(OUT)/split_pulp/% main_script.py
+$(STATES:%=$(OUT)/main_script/%_blocks): $(OUT)/main_script/%_blocks: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_500k* data/%_census_blocks $(OUT)/split_pulp/% main_script.py main_plot.py
 	@ mkdir -p $(OUT)/main_script
 	python3 main_script.py $* $(OUT)/do_redistrict/$* shapestate_data/cb_2017_us_state_500k data/$*_census_blocks/tabblock2010_$($*_POPID)_pophu $(OUT)/split_pulp/$* $@
 	@ test -s $@
