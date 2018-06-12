@@ -73,7 +73,7 @@ tuple<vector<Point>, Assignment, vector<double> > choose_centers(const vector<Po
       centers[j] = new_center;
     }
   }
-  while (different and iter_count < 5*num_centers);
+  while (different and iter_count < 50*num_centers);
   if (different){
     cerr << "FAILURE TO CONVERGE\n";
   }
