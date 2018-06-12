@@ -311,8 +311,8 @@ def GNUplot_polygon(p, f, color):
         f.write(str(x[i]) + "," + str(y[i]))
         if i != len(x) - 1:
             f.write(" to ")
-    # f.write(" fc rgb '" + color + "' fs solid lw 0\n")
-    f.write(" fc rgb '" + color + "' lw 0.02\n")  # alpha -neal
+    f.write(" fc rgb '" + color + "' fs solid lw 0\n")
+    #f.write(" fc rgb '" + color + "' lw 0.02\n")  # alpha -neal
 
     # f.write("set object polygon from ")
     # x,y = p.exterior.xy
