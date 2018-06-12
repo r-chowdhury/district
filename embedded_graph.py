@@ -60,7 +60,15 @@ class EGraph:
         darts associated with a vertex (a cell) are clockwise-going segments around the cell
         '''
         self.vertices.append([])
-        pts = list(cell.exterior.coords)[:-1] #omit last pt, which equals first
+        self._process_boundary(cell.exterior, remove_redundant)
+        for interior_boundary in cell.interiors:
+            self._process_boundary(interior_boundary, remove_redundant)
+    
+    def _process_boundary(self, linear_ring, remove_redundant):
+        '''
+        darts associated with a vertex (a cell) are clockwise-going segments around the cell
+        '''
+        pts = list(linear_ring.coords)[:-1] #omit last pt, which equals first
         if remove_redundant: _remove_redundant(pts) #first get rid of redundant pts
         for i in range(len(pts)):
             new_id = self.__new_segment_helper(pts[i], pts[(i+1)%len(pts)])
