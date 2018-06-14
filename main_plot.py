@@ -386,10 +386,19 @@ def GNUplot(
 
     if(boundary_census_shapefile_name != ""):
         for block in census_block.gen(boundary_census_shapefile_name):
-            if block.ID in boundary_census_assign:
-                GNUplot_boundary_census(
-                    block.polygon, f, colors[boundary_census_assign[block.ID]]
-                )
+            blockid = block.ID 
+            clipped_block = clip([block.polygon], boundary)
+            if type(clipped_block) == sg.multipolygon.MultiPolygon:                
+                for b in clipped_block:
+                    if blockid in boundary_census_assign:
+                        GNUplot_boundary_census(
+                            b[0], f, colors[boundary_census_assign[blockid]]
+                        )
+                continue
+            GNUplot_boundary_census(
+                clipped_block[0], f, colors[boundary_census_assign[blockid]]
+            )
+            
     offset_x = 0.1 * (bbox[1][0] - bbox[0][0])
     offset_y = 0.1 * (bbox[1][1] - bbox[0][1])
     f.write(
@@ -427,7 +436,7 @@ def clip(polygons, boundary):
     for b in boundary:
         for i in range(len(polygons)):
             p = polygons[i]
-            color = colors[i]
+            color = colors[i%60]
             if b.contains(p):
                 # print("here with", i)
                 new_clipped.append((p, color))
