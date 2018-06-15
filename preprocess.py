@@ -19,11 +19,21 @@ def clip(polygons, boundary):
 
 
 def get_empty_blocks(polygons, boundary):
+    print("Nb connected components in state", len(boundary))
+    nbbound = 0
     for b in boundary:
         empty_list = [b]
+        i = 0
         for block in polygons:
             p = block.polygon
             new_list = []
+            if(i%10000 == 0):
+                print(i, "th census block/",len(polygons),
+                      "   Nb new blocks:", len(empty_list),
+                      "  ",
+                      nbbound, "th connected component of the state/",
+                      len(boundary))
+            i+=1
             for d in empty_list:
                 res = d.difference(p)
                 if type(res) == sg.multipolygon.MultiPolygon:
@@ -32,16 +42,30 @@ def get_empty_blocks(polygons, boundary):
                 else:
                     new_list.append(res)
             empty_list = new_list
+        nbbound+=1
     return empty_list
         
 
 def print_blocks(polygons, filename):
     f = open(filename, "w")
     for r in polygons:
-        x, y = r.exterior.xy
-        for i in range(len(x)):
-            f.write(str(x[i]) + "," + str(y[i]) + " ")
+        # print("_-------------------------------------_")
+        # print(type(r))
+        if(type(r) == sg.point.Point): continue
+        if type(r) == sg.multipolygon.MultiPolygon:
+            continue # for now because I don't know how to work out this
+            for res in r :
+                x, y = res.exterior.xy
+                # print("-----", x, "-----", y)
+                for i in range(len(x)):
+                    f.write(str(x[i]) + "," + str(y[i]) + " ")
+        elif type(r) == sg.polygon.Polygon:
+            x, y = r.exterior.xy
+            # print("-----", x, "-----", y)
+            for i in range(len(x)):
+                f.write(str(x[i]) + "," + str(y[i]) + " ")
         f.write("\n")
+        # print("_-------------------------------------_")
     f.close()
     
 
@@ -69,12 +93,14 @@ if __name__ == "__main__":
     state_polygon  = read_boundary(state_shape_filename, state_abbrv)
     print("start with reading census")
     census_polygons = read_census(census_shape_filename)
+    print("total number of census is", len(census_polygons))
 
+    print("computing empty blocks...")
+    # empty_blocks = get_empty_blocks(census_polygons, state_polygon)
+    print("done")
     print("clipping...")
     census_polygons_clipped = clip(census_polygons, state_polygon)
     print("done")
-    print("computing empty blocks...")
-    empty_blocks = get_empty_blocks(census_polygons, state_polygon)
-    print("done")
     
-    print_blocks(census_polygons_clipped+empty_blocks, output_filename)
+    # print_blocks(census_polygons_clipped+empty_blocks, output_filename)
+    print_blocks(census_polygons_clipped, output_filename)
