@@ -133,3 +133,15 @@ power-diagram cells (clipped against the state boundaries).
 Function plot_helperGNUplot_fromfile does the same thing than
 the plot_helperGNUplot but takes as input a file in the format
 of the file output by plot_helperVoronoi.
+
+
+Preprocess.py outputs a list of census blocks clipped to the
+boundary of their states.
+WARNING: for now, some census blocks behave weirdly. They may be broken
+into a few pieces when clipped or reduced to a single point. These
+census blocks are for now discarded.
+Usage:
+python3 preprocess.py <Two-letter state abbrv> <shapestate filename>
+<shapecensus filename> <output filename>
+
+example for Alabama: python3 preprocess.py AL shapestate_data/cb_2017_us_state_500k. data/AL_census_blocks/tabblock2010_01_pophu. AL_new_census
