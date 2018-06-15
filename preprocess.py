@@ -49,13 +49,17 @@ def get_empty_blocks(polygons, boundary):
 
 def print_blocks(polygons, filename):
     f = open(filename, "w")
+    nb_weird_census = 0
     for ru in polygons:
         # print("_-------------------------------------_")
         # print(type(r))
         r = ru[0]
         idr = ru[1]
-        if(type(r) == sg.point.Point): continue
+        if(type(r) == sg.point.Point):
+            nb_weird_census+=1
+            continue
         if type(r) == sg.multipolygon.MultiPolygon:
+            nb_weird_census+=1
             continue # for now because I don't know how to work out this
             for res in r :
                 x, y = res.exterior.xy
@@ -69,8 +73,11 @@ def print_blocks(polygons, filename):
             f.write(str(idr)+ " ")
             for i in range(len(x)):
                 f.write(str(x[i]) + "," + str(y[i]) + " ")
+        else:
+            nb_weird_census+=1
         f.write("\n")
         # print("_-------------------------------------_")
+    print("Number of non-polygon census blocks :", nb_weird_census)
     f.close()
     
 
