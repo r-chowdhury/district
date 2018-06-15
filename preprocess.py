@@ -11,10 +11,11 @@ def clip(polygons, boundary):
     for b in boundary:
         for i in range(len(polygons)):
             p = polygons[i].polygon
+            idi = polygons[i].ID
             if b.contains(p):
-                new_clipped.append(p)
+                new_clipped.append([p, idi])
             elif p.intersects(b):
-                new_clipped.append(p.intersection(b))
+                new_clipped.append([p.intersection(b), idi])
     return new_clipped
 
 
@@ -48,20 +49,24 @@ def get_empty_blocks(polygons, boundary):
 
 def print_blocks(polygons, filename):
     f = open(filename, "w")
-    for r in polygons:
+    for ru in polygons:
         # print("_-------------------------------------_")
         # print(type(r))
+        r = ru[0]
+        idr = ru[1]
         if(type(r) == sg.point.Point): continue
         if type(r) == sg.multipolygon.MultiPolygon:
             continue # for now because I don't know how to work out this
             for res in r :
                 x, y = res.exterior.xy
                 # print("-----", x, "-----", y)
+                f.write(str(idr)+ " ")
                 for i in range(len(x)):
                     f.write(str(x[i]) + "," + str(y[i]) + " ")
         elif type(r) == sg.polygon.Polygon:
             x, y = r.exterior.xy
             # print("-----", x, "-----", y)
+            f.write(str(idr)+ " ")
             for i in range(len(x)):
                 f.write(str(x[i]) + "," + str(y[i]) + " ")
         f.write("\n")

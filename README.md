@@ -145,3 +145,6 @@ python3 preprocess.py <Two-letter state abbrv> <shapestate filename>
 <shapecensus filename> <output filename>
 
 example for Alabama: python3 preprocess.py AL shapestate_data/cb_2017_us_state_500k. data/AL_census_blocks/tabblock2010_01_pophu. AL_new_census
+
+output contains on each line:
+<ID of block> < coordonates of polygon associated>
