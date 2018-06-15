@@ -122,7 +122,7 @@ IL_DISTRICTS = 18
 NY_DISTRICTS = 27
 TX_DISTRICTS = 36
 
-RI_DISTRICTS = 3
+RI_DISTRICTS = 2
 
 $(STATES:%=$(OUT)/do_redistrict/%): $(OUT)/do_redistrict/%: $(OUT)/census_block/% do_redistrict
 	@ mkdir -p $(OUT)/do_redistrict
