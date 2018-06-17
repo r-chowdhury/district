@@ -3,6 +3,7 @@
 '''
 
 from util import swap, vec, dotproduct, norm
+from collections import defaultdict
 
 def _remove_redundant(pts):
     "Mutates a list of points to get rid of those points that are not needed to define polygon"
@@ -50,28 +51,38 @@ class EGraph:
         self.vertices = []
         self.next = {}
         self.head = {}
+        self.links = {} #linking vertex representing an outer boundary to vertices representing inner boundaries
                 
     def rev(self, dart_id): return dart_id ^ 1
     
     def edge(self, dart_id): return dart_id >> 1
     
-    def process_cell(self, cell, remove_redundant = False):
-        '''cell is a polygon
-        darts associated with a vertex (a cell) are clockwise-going segments around the cell
+    def process_region(self, region, remove_redundant = False):
+        '''Region is a polygon with an outer boundary and possibly inner boundaries.
+        To each boundary corresponds a vertex, with its own incoming darts.
+        Darts incoming to a vertex correspond to segments that go around the boundary clockwise for outer boundary,
+        counterclockwise for inner boundaries.
         '''
-        self.vertices.append([])
+        outer_vertex = self.num_vertices() # vertex corresponding to outer boundary
         self._process_boundary(cell.exterior, remove_redundant)
+        inner_vertices = []
         for interior_boundary in cell.interiors:
+            inner_vertices.append(self.num_vertices()) # vertex corresponding to an inner boundary
             self._process_boundary(interior_boundary, remove_redundant)
+        self.links[outer_vertex] = inner_vertices #link outer vertex to inner vertices
     
+    def _new_vertex(self):
+        self.vertices.append([]) # create new entry in vertices table--this will record new incoming darts
+        
     def _process_boundary(self, linear_ring, remove_redundant):
         '''
         darts associated with a vertex (a cell) are clockwise-going segments around the cell
         '''
+        self._new_vertex()
         pts = list(linear_ring.coords)[:-1] #omit last pt, which equals first
         if remove_redundant: _remove_redundant(pts) #first get rid of redundant pts
         for i in range(len(pts)):
-            new_id = self.__new_segment_helper(pts[i], pts[(i+1)%len(pts)])
+            new_id = self._new_segment_helper(pts[i], pts[(i+1)%len(pts)]) #adds dart to vertices table
             if i==0:
                 first_id = new_id
             else:
@@ -79,36 +90,72 @@ class EGraph:
             prev_id = new_id
         self.next[new_id] = first_id
     
-    def __new_segment_helper(self, pt0, pt1):
+    def _new_dart_helper(self, dart_id):
+            vertex_id = len(self.vertices)-1 #last entry in vertices table
+            self.head[dart_id] = vertex_id #record head of new dart
+            self.vertices[vertex_id].append(dart_id) #add incoming dart to vertices table
+            
+    def _new_segment_helper(self, pt0, pt1):
+            "returns id of new dart"
             segment = pt0, pt1
             self.segmentmapper.add_segment(segment)
+            new_dart_id = self.segmentmapper.segment2id[segment]
             vertex_id = len(self.vertices)-1 #last entry in vertices table
-            new_id = self.segmentmapper.segment2id[segment]
-            self.head[new_id] = vertex_id
-            self.vertices[vertex_id].append(new_id)
-            return new_id
+            self._new_dart_helper(new_dart_id)
+            return new_dart_id
 
     def find_outer(self):
         '''After cells have been processed, those segments not appearing twice
-        form the boundary of the infinite region.
-        Unfortunately, this currently assumes there is only one (connected) region not represented among the cells.
+        form boundaries of other regions.
         '''
+        def head(segment): return segment[1]
+        def tail(segment): return segment[0]
         #Among the reverses of segments that do appear, which ones do not appear?
-        outer_segments = [swap(segment) for segment in self.segmentmapper.get_segments() if swap(segment) not in self.segmentmapper.get_segments()]
-        #Among those, map first points to second points
-        start2end = {pt0:pt1 for (pt0, pt1) in outer_segments}
-        '''Unfortunately, there is  no guarantee that only one pt1 corresponds to a single pt0
-        '''
-        #Now form the cycle.
-        initial_point = outer_segments[0][0]
-        pt0 = initial_point
-        self.vertices.append([])
-        while True:
-            pt1 = start2end[pt0]
-            new_id = self.__new_segment_helper(pt0, pt1)
-            if pt1 == initial_point:
-                break
-            pt0 = pt1
+        outer_segments = [swap(segment) for segment in self.segmentmapper.get_segments()
+                              if swap(segment) not in self.segmentmapper.get_segments()]
+        incident = defaultdict(list) #Will map each point to incident segments, or rather to pairs (segment, bool)
+        #where bool indicates incoming (True) or outgoing (False)
+        #Populate incident table 
+        for segment in outer_segments:
+            incident[tail(segment)].append((head(segment),False)) #outgoing
+            incident[head(segment)].append((tail(segment), True)) #incoming
+        #sort neighbors of each vertex according to angle
+        def pt(pt_plus): return pt_plus[0]
+        def incoming(pt_plus): return pt_plus[1]
+        def angle_finder(start):
+            return lambda end_plus: atan2(pt(end_plus)[1]-start[1], pt(end_plus)[0]-start[0])
+        #Create and populate analogue of next table for the segments
+        #(Not using true next table yet because it is helpful to known vertex id at same time
+        segment_next = {}
+        for pt0,pts_plus in incident.items():
+            pts_plus.sort(key=angle_finder(pt0))
+            #new_neighbors = pts_plus if incoming(pts_plus[0]) else pts_plus[1:]+pts_plus[:1]
+            #for i in range(0,len(new_neighbors),2):
+            #    assert incoming(new_neighbors[i]) and not incoming(new_neighbors[i+1]) #i is incoming, i+1 is outgoing
+            #    segment_next[pt(new_neighbors[i]),pt0] = pt0,pt(new_neighbors[i+1])
+        #Create vertices for the new polygons
+        #Keep track of which darts have been assigned to vertices
+        used= set()
+        for segment in outer_segments:
+            if segment not in used:
+                #Create new vertex
+                self._new_vertex()
+                #Traverse cycle containing segment
+                first_vertex = tail(segment)
+                first_dart_id = None
+                while head(segment) != first_vertex:
+                    used.add(segment) #record having traversed this segment
+                    dart_id = self._new_segment_helper(tail(segment), head(segment))
+                    if first_dart_id == None:
+                        first_dart_id = dart_id
+                    else:
+                        self.next[prev_dart_id] = dart_id
+                    incidence_list = incident[head(segment)] #incidence list for head of current segment
+                    i = incidence_list.index((tail(segment), True)) #position of current segment
+                    segment, incoming = incidence_list[(i+1) % len(incidence_list)]
+                    assert not incoming
+                    prev_dart_id = dart_id
+                next[prev_dart_id] = first_id #complete the cycle
 
     def next(self, id): return self.next[id]
 
@@ -141,3 +188,14 @@ G = embedded_graph.EGraph()
 for cell in cells: G.process_cell(cell)
 G.find_outer()
 '''    
+
+            
+
+
+
+'''
+class PrimalEGraph(EGraph):
+    def __init__(self):
+        EGraph.__init__(self)
+        self.primal_vertices = {}
+'''
