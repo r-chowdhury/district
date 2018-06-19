@@ -18,6 +18,17 @@ def clip(polygons, boundary):
                 new_clipped.append([p.intersection(b), idi])
     return new_clipped
 
+def clip2(blocks, boundary):
+    for block in blocks:
+        number_of_intersecting_boundary_pieces = 0
+        for boundary_piece in boundary:
+            if boundary_piece.contains(block.polygon): yield (block.polygon, block.ID, block.population)
+            elif boundary_piece.intersects(block.polygon):
+                number_of_intersecting_boundary_pieces += 1
+                yield (boundary_piece.intersection(block.polygon), block.ID, block.population)
+        if number_of_intersecting_boundary_pieces > 1:
+            print("preprocess found block ", block.ID, " intersects ", number_of_intersecting_boundary_pieces, " boundary pieces at ", block.centroid, " with population ", block.population)
+            
 
 def get_empty_blocks(polygons, boundary):
     print("Nb connected components in state", len(boundary))
