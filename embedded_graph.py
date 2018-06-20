@@ -182,28 +182,31 @@ class EGraph:
         return [self.head[d] for d in [dart_id, self.rev(dart_id)]]
 
     def neighbors(self, v):
-            return [self.head[self.rev(d)] for d in self.vertices[v]] + \
+            return [self.head[self.rev(d)] for d in self.vertices[v] if self.rev(d) in self.head] + \
                   (self.outer2inner[v] if v in self.outer2inner else []) + \
                   ([self.inner2outer[v]] if v in self.inner2outer else [])
 
-    def _visit(self, root, i):
+    def _visit(self, root, i, include_fn, v2component_number):
+        "returns number of vertices"
+        count = 0
         stack = [root]
         while stack != []:
             v = stack.pop()
-            if v not in self.component_number:
-                self.component_number[v] = i
+            if v not in v2component_number and include_fn(v):
+                count += 1
+                v2component_number[v] = i
                 stack.extend(self.neighbors(v))
-            #except Exception:
-            #print("exception in embedded_graph")
+        return count
         
-    def connected_components(self):
-        self.component_number = {}
+    def connected_components(self, include_fn):
+        v2component_number = {}
+        sizes = []
         component_reps = []
         for vertex in range(self.num_vertices()):
-            if vertex not in self.component_number:
-                self._visit(vertex, len(component_reps))
+            if vertex not in v2component_number and include_fn(vertex):
+                sizes.append(self._visit(vertex, len(component_reps), include_fn, v2component_number))
                 component_reps.append(vertex)
-        return component_reps
+        return component_reps, v2component_number, sizes
 
 
 #    def dual(self):
