@@ -22,8 +22,10 @@ class Census_Block:
 
     @property
     def centroid(self):
+        "If centroid not in polygon then some arbitrary point inside the block"
         if self.centroid_cache == None:
-            self.centroid_cache = self.polygon.centroid
+            centroid = self.polygon.centroid
+            self.centroid_cache = centroid if self.polygon.contains(centroid) else self.polygon.representative_point
         return self.centroid_cache
 
 
