@@ -13,6 +13,6 @@ def get(state_abbreviation, state_boundary_shapefilename, assignment_filename):
     bbox = Voronoi_boundaries.find_bbox(C_3D+L)
     cells = Voronoi_boundaries.power_cells(C_3D, bbox)
     for cell in cells:
-        G.process_cell(cell, True) #get rid of extraneous points
+        G.add_region(cell, True) #get rid of extraneous points
     G.find_outer()
     return G, cells, C_3D
