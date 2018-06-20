@@ -9,62 +9,80 @@ from embedded_graph import EGraph
 
 # from shapely.geometry import LineString, Point
 from collections import deque
-import pickle
 import time
+#from plotting import plot_polygons #for debugging
 
 # import deeper
 
 
-def get(census_block_plus_collection, k):
+def get(census_block_plus_collection, cells):
     debugflag = True
     time_start = time.clock()
-    G = EGraph()
-    vertex2block_id = {}
-    relevant_vertices = [
-        set() for _ in range(k)
+    block_id2block_plus = {}
+    boundary_block_IDs = set()
+    relevant_blocks = [
+        [] for _ in range(len(cells))
     ]  # boundary vertices intersecting district i
-    boundary_vertices = set()
-    vertex2block_plus = {}  # maps a vertex to corresponding block and associated items
-    # create graph G of blocks,  assign them to relevant centers, identify boundary vertices, keep track of blocks of boundary vertices
-    counter = 0
+    decision_blocks = []
     for block, relevant_district_items in census_block_plus_collection:
-        if counter % 10000 == 0: print("block_bfs.py phase 1, counter", counter)
-        counter = counter + 1
-        v = G.num_vertices()
-        vertex2block_id[v] = block.ID
-        G.process_cell(
-            block.polygon
-        )  # new vertex ID is v  --- eliminate redundant vertices?  Maybe not.
+        if block.ID % 10000 == 0: print("block_bfs.py phase 1", block.ID)
+        #Build set of IDs of blocks that are boundary blocks
+        if len(relevant_district_items)> 1:
+            boundary_block_IDs.add(block.ID)
+            #Build list of blocks that must be decided upon
+            if block.population > 0:
+                decision_blocks.append((block, relevant_district_items))
+        #Keep track of which districts the blocks are relevant to
         for item in relevant_district_items:
-            relevant_vertices[item.ID].add(v)
+            relevant_blocks[item.ID].append(block)
             item.dependee = block.ID # in case the vertex is not reached by BFS, set its dependee field to itself to indicate no true dependee
-            #maybe could have set dependee only for boundary blocks, i.e. those with multiple relevant district items.
-        if len(relevant_district_items) > 1:
-            boundary_vertices.add(v)
-            vertex2block_plus[v] = block, relevant_district_items
-    # BFS to find parents/dependees for boundary blocks
-    for i in range(k):
-        waiting = deque(v for v in relevant_vertices[i] if v not in boundary_vertices)
+    for i in range(len(cells)):
+        #Build graph of blocks relevant to power cell i
+        G = EGraph()
+        internal_vertices = set()
+        vertex2block_plus = {}  # maps a vertex to corresponding block and associated items
+        for block in relevant_blocks[i]:
+            if block.population > 0 and block.ID in boundary_block_IDs:
+                vertex2block_plus[G.num_vertices()] = block, relevant_district_items
+            if block.ID not in boundary_block_IDs:
+                internal_vertices.add(G.num_vertices())
+            if block.ID in boundary_block_IDs and block.population == 0:
+                geometry = block.polygon.intersection(cells[i])
+                if geometry.geom_type == 'Polygon':
+                    G.add_region(geometry)
+                else:
+                    if geometry.geom_type == 'MultiPolygon':
+                        for polygon in geometry:
+                            G.add_region(polygon)
+                    else:
+                        print("block_bfs2 ", geometry_geom_type, " ID ", block.ID)
+            else:
+                G.add_region(block.polygon)
+        #Find largest connected component of internal vertices
+        def internal(v):
+            return v in internal_vertices
+        print("block_bfs2")
+        component_reps, v2component_number, sizes = G.connected_components(internal)
+        big_component_number = max(range(len(sizes)), key = lambda j:sizes[j])
+        #BFS to find parents/dependees
+        #Initialize core
+        waiting = deque(v for v in range(G.num_vertices()) if v in v2component_number and v2component_number[v] == big_component_number)
         visited = set(waiting)
         counter = 0
         while len(waiting) > 0:
             if counter % 10000 == 0: print("block_bfs.py phase 2, counter ", counter)
             counter = counter + 1
             v = waiting.pop()
-            for incoming_dart in G.incoming(v):
-                outgoing_dart = G.rev(incoming_dart)
-                if outgoing_dart in G.head:
-                    w = G.head[outgoing_dart]
-                    if w not in visited and w in relevant_vertices[i]:
-                        visited.add(w)
-                        waiting.appendleft(w)
+            for w in G.neighbors(v):
+                if w not in visited:
+                    visited.add(w)
+                    waiting.appendleft(w)
+                    if w in vertex2block_plus and v in vertex2block_plus:
                         for item in vertex2block_plus[w][1]:
                             if item.ID == i:
-                                item.dependee = vertex2block_id[v]
+                                item.dependee = vertex2block_plus[v][0].ID
                                 break
-    #Now output the results
-    return vertex2block_plus.values() #indexed by boundary_vertices
-
+    return decision_blocks
 
 """
 import census_block
