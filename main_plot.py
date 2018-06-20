@@ -5,7 +5,7 @@
 import shapely.geometry as sg
 from shapely.geometry.polygon import Polygon
 # import state_shape
-import census_block
+import census_block_file
 
 # from matplotlib import colors as mcolors
 import Voronoi_boundaries as vb
@@ -384,20 +384,16 @@ def GNUplot(
         # print("color", colors[i])
         GNUplot_polygon(pol, f, col)
 
-    if(boundary_census_shapefile_name != ""):
-        for block in census_block.gen(boundary_census_shapefile_name):
-            blockid = block.ID 
-            clipped_block = clip([block.polygon], boundary)
-            if type(clipped_block) == sg.multipolygon.MultiPolygon:                
-                for b in clipped_block:
-                    if blockid in boundary_census_assign:
-                        GNUplot_boundary_census(
-                            b[0], f, colors[boundary_census_assign[blockid]]
-                        )
-                continue
-            GNUplot_boundary_census(
-                clipped_block[0], f, colors[boundary_census_assign[blockid]]
-            )
+    if boundary_census_shapefile_name != "":
+        for block in census_block_file.read(boundary_census_shapefile_name):
+            blockid = block.ID
+            if blockid in boundary_census_assign:
+                clipped_block = clip([block.polygon], boundary)[0][0]
+                if type(clipped_block) == sg.multipolygon.MultiPolygon:
+                    for b in clipped_block:
+                            GNUplot_boundary_census(b, f, colors[boundary_census_assign[blockid]])
+                else:
+                    GNUplot_boundary_census(clipped_block, f, colors[boundary_census_assign[blockid]])
             
     offset_x = 0.1 * (bbox[1][0] - bbox[0][0])
     offset_y = 0.1 * (bbox[1][1] - bbox[0][1])
