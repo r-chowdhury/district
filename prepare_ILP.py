@@ -1,4 +1,4 @@
-import census_block
+import census_block_file
 import closest
 import relevant_districts
 import areas_of_intersection
@@ -11,7 +11,10 @@ import sys
 
 def test(state_abbreviation, state_boundary_shapefilename, census_shapefilename, assignment_filename):
     G, cells, C_3D = district_graph.get(state_abbreviation, state_boundary_shapefilename, assignment_filename)
-    
+    #for i in range(len(cells)):
+    #    outer, inners = G.region_data(i)
+    #    assert len(inners) == 0
+    #    assert list(cells[i].exterior.coords)[:-1] == outer
     def merge(x,y):
         relevant_district_items = y[1]
         district2pop = x[1]
@@ -19,7 +22,7 @@ def test(state_abbreviation, state_boundary_shapefilename, census_shapefilename,
             item.population = district2pop[item.ID] if item.ID in district2pop else 0
         return y
     start_time = time.clock()
-    L = list(census_block.gen(shapefilename))
+    L = list(census_block_file.read(shapefilename))
     print("time 1 ", time.clock() - start_time)
     start_time = time.clock()
     L = list(closest.gen(L, C_3D))
@@ -31,7 +34,7 @@ def test(state_abbreviation, state_boundary_shapefilename, census_shapefilename,
     L = list(areas_of_intersection.gen(L, cells))
     print("time 4 ", time.clock() - start_time)
     start_time = time.clock()
-    L = list(block_bfs.get(L, len(cells)))
+    L = list(block_bfs.get(L, cells))
     print("time 5 ", time.clock() - start_time)
     start_time = time.clock()
     # It might be a performance problem that the next statement materializes the whole dict
