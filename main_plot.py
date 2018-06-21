@@ -6,7 +6,7 @@ import shapely.geometry as sg
 from shapely.geometry.polygon import Polygon
 # import state_shape
 import census_block_file
-
+import district_graph
 # from matplotlib import colors as mcolors
 import Voronoi_boundaries as vb
 
@@ -101,6 +101,7 @@ def Parse_census_boundary(filename):
 def Parse_census_assign(filename):
     if filename == "":
         return []
+    #return {int(blockID):int(districtID) for blockID,districtID in [line.split() for line in open(filename)]}
     f = open(filename, "r")
     lines = f.readlines()
     census_assign = {}
@@ -358,7 +359,7 @@ def GNUplot_point(p, f):
 
 
 def GNUplot(
-    C,
+    C, #C_3D
     A,
     boundary,
     clipped_power_cells,
@@ -371,6 +372,7 @@ def GNUplot(
     f = open(outputfilename, "w")
     # f.write("set style fill transparent solid 0.4\n")  # alpha + border - Neal
     f.write("set style fill solid noborder\n")  # no border, no alpha - Neal
+    G = district_graph.get(C, power_cells, bbox)
     for i in range(len(power_cells)):
         GNUplot_nonclipped(power_cells[i], f)
     for i in range(len(clipped_power_cells)):
@@ -385,12 +387,10 @@ def GNUplot(
         GNUplot_polygon(pol, f, col)
 
     if boundary_census_shapefile_name != "":
-        types = set()
-        for block in census_block_file.read(boundary_census_shapefile_name):
+        for block, district_items in census_block_district_intersection(relevant_districts(closest.gen(census_block_file.read(boundary_census_shapefile_name), C), G), cells):
             blockid = block.ID
             if blockid in boundary_census_assign:
                 temp =  clip([block.polygon], boundary)
-                types.add(type(temp))
                 if len(temp) > 0:
                     clipped_block = temp[0][0]
                     if clipped_block.geom_type in ['MultiPolygon','GeometryCollection']:

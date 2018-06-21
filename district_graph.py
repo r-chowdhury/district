@@ -2,17 +2,16 @@ import embedded_graph
 import state_shape
 import Voronoi_boundaries
 
-def get(state_abbreviation, state_boundary_shapefilename, assignment_filename):
-    '''returns graph and 3d locations of centers'''
-    assignment_file = open(assignment_filename)
-    k, n = [int(x) for x in assignment_file.readline().split()]
-    C_3D = [tuple(float(x) for x in assignment_file.readline().split()) for _ in range(k)]
-    G = embedded_graph.EGraph()
+def find_bbox(state_abbreviation, state_boundary_shapefilename, C_3D):
     state_boundary = state_shape.read(state_abbreviation, state_boundary_shapefilename)
     L = sum((list(p.exterior.coords) for p in state_boundary), [])
-    bbox = Voronoi_boundaries.find_bbox(C_3D+L)
-    cells = Voronoi_boundaries.power_cells(C_3D, bbox)
+    return Voronoi_boundaries.find_bbox(C_3D+L)
+
+
+def get(C_3D, cells, bbox):
+    '''returns graph'''
+    G = embedded_graph.EGraph()
     for cell in cells:
         G.add_region(cell, True) #get rid of extraneous points
     G.find_outer()
-    return G, cells, C_3D
+    return G
