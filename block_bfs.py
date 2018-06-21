@@ -23,51 +23,51 @@ def get(census_block_plus_collection, cells):
     relevant_blocks = [
         [] for _ in range(len(cells))
     ]  # boundary vertices intersecting district i
-    decision_blocks = []
+    blocks_plus = []
+    decided_IDs = []
     for block, relevant_district_items in census_block_plus_collection:
-        if block.ID % 10000 == 0: print("block_bfs.py phase 1", block.ID)
+        if block.ID % 10000 == 1: print("block_bfs.py phase 1", block.ID)
+        blocks_plus.append((block, relevant_district_items))
         #Build set of IDs of blocks that are boundary blocks
         if len(relevant_district_items)> 1:
             boundary_block_IDs.add(block.ID)
-            #Build list of blocks that must be decided upon
-            if block.population > 0:
-                decision_blocks.append((block, relevant_district_items))
         #Keep track of which districts the blocks are relevant to
         for item in relevant_district_items:
             relevant_blocks[item.ID].append(block)
-            item.dependee = block.ID # in case the vertex is not reached by BFS, set its dependee field to itself to indicate no true dependee
+            item.dependee = block.ID # in case the vertex is not assigned parent by BFS, set its dependee field to itself to indicate no true dependee
     for i in range(len(cells)):
         #Build graph of blocks relevant to power cell i
         G = EGraph()
-        internal_vertices = set()
+        boundary_vertices = set()
         vertex2block_plus = {}  # maps a vertex to corresponding block and associated items
         for block in relevant_blocks[i]:
-            if block.population > 0 and block.ID in boundary_block_IDs:
-                vertex2block_plus[G.num_vertices()] = block, relevant_district_items
-            if block.ID not in boundary_block_IDs:
-                internal_vertices.add(G.num_vertices())
-            if block.ID in boundary_block_IDs and block.population == 0:
-                geometry = block.polygon.intersection(cells[i])
-                if geometry.geom_type == 'Polygon':
-                    G.add_region(geometry)
-                else:
-                    if geometry.geom_type == 'MultiPolygon':
-                        for polygon in geometry:
-                            G.add_region(polygon)
-                    else:
-                        print("block_bfs2 ", geometry_geom_type, " ID ", block.ID)
-            else:
-                G.add_region(block.polygon)
+            vertex2block_plus[G.num_vertices()] = block, relevant_district_items
+            if block.ID in boundary_block_IDs:
+                boundary_vertices.add(G.num_vertices())
+            #if block.ID in boundary_block_IDs and block.population == 0:
+            #    geometry = block.polygon.intersection(cells[i])
+            #    if geometry.geom_type == 'Polygon':
+            #        G.add_region(geometry)
+            #    else:
+            #        if geometry.geom_type == 'MultiPolygon':
+            #            for polygon in geometry:
+            #                G.add_region(polygon)
+            #        else:
+            #            print("block_bfs2 ", geometry_geom_type, " ID ", block.ID)
+            #else:
+            G.add_region(block.polygon) #will produce multiple vertices if polygon has internal boundaries
         #Find largest connected component of internal vertices
         def internal(v):
-            return v in internal_vertices
-        print("block_bfs2")
+            return v not in boundary_vertices
+        print("block_bfs phase 2")
         component_reps, v2component_number, sizes = G.connected_components(internal)
         big_component_number = max(range(len(sizes)), key = lambda j:sizes[j])
         #BFS to find parents/dependees
         #Initialize core
-        waiting = deque(v for v in range(G.num_vertices()) if v in v2component_number and v2component_number[v] == big_component_number)
-        visited = set(waiting)
+        core = [v for v in range(G.num_vertices()) if v in v2component_number and v2component_number[v] == big_component_number]
+        waiting = deque(core)
+        visited = set(core)
+        decided_IDs.extend([vertex2block_plus[v][0].ID for v in core if v in vertex2block_plus]) # Don't need to consider vertices corresponding to inner boundaries---they don't correspond to blocks
         counter = 0
         while len(waiting) > 0:
             if counter % 10000 == 0: print("block_bfs.py phase 2, counter ", counter)
@@ -77,12 +77,12 @@ def get(census_block_plus_collection, cells):
                 if w not in visited:
                     visited.add(w)
                     waiting.appendleft(w)
-                    if w in vertex2block_plus and v in vertex2block_plus:
+                    if w in vertex2block_plus and v in vertex2block_plus: # Perhaps these vertices correspond to inner boundaries
                         for item in vertex2block_plus[w][1]:
                             if item.ID == i:
                                 item.dependee = vertex2block_plus[v][0].ID
                                 break
-    return decision_blocks
+    return [x for x in blocks_plus if x[0].ID not in decided_IDs]
 
 """
 import census_block
