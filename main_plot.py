@@ -361,8 +361,8 @@ def GNUplot(
     C,
     A,
     boundary,
-    polygons,
-    clipped,
+    clipped_power_cells,
+    power_cells, #unclipped
     bbox,
     outputfilename,
     boundary_census_shapefile_name,
@@ -371,12 +371,12 @@ def GNUplot(
     f = open(outputfilename, "w")
     # f.write("set style fill transparent solid 0.4\n")  # alpha + border - Neal
     f.write("set style fill solid noborder\n")  # no border, no alpha - Neal
-    for i in range(len(clipped)):
-        GNUplot_nonclipped(clipped[i], f)
-    for i in range(len(polygons)):
+    for i in range(len(power_cells)):
+        GNUplot_nonclipped(power_cells[i], f)
+    for i in range(len(clipped_power_cells)):
         # col = C[i][2]
-        col = polygons[i][1]
-        pol = polygons[i][0]
+        col = clipped_power_cells[i][1]
+        pol = clipped_power_cells[i][0]
         if type(pol) == sg.multipolygon.MultiPolygon:
             for p in pol:
                 GNUplot_polygon(p, f, col)
@@ -385,15 +385,20 @@ def GNUplot(
         GNUplot_polygon(pol, f, col)
 
     if boundary_census_shapefile_name != "":
+        types = set()
         for block in census_block_file.read(boundary_census_shapefile_name):
             blockid = block.ID
             if blockid in boundary_census_assign:
-                clipped_block = clip([block.polygon], boundary)[0][0]
-                if type(clipped_block) == sg.multipolygon.MultiPolygon:
-                    for b in clipped_block:
-                            GNUplot_boundary_census(b, f, colors[boundary_census_assign[blockid]])
-                else:
-                    GNUplot_boundary_census(clipped_block, f, colors[boundary_census_assign[blockid]])
+                temp =  clip([block.polygon], boundary)
+                types.add(type(temp))
+                if len(temp) > 0:
+                    clipped_block = temp[0][0]
+                    if clipped_block.geom_type in ['MultiPolygon','GeometryCollection']:
+                        for b in clipped_block:
+                            if b.geom_type == 'Polygon':
+                                GNUplot_boundary_census(b, f, colors[boundary_census_assign[blockid]])
+                    elif clipped_block.geom_type == 'Polygon':
+                        GNUplot_boundary_census(clipped_block, f, colors[boundary_census_assign[blockid]])
             
     offset_x = 0.1 * (bbox[1][0] - bbox[0][0])
     offset_y = 0.1 * (bbox[1][1] - bbox[0][1])
@@ -427,7 +432,8 @@ def get_approx_boundary(A):
 
 def clip(polygons, boundary):
     #boundary is a multipolygon
-    # clipped = polygons          # not used
+    # Returns a list.  Each element of the list is a pair (p, str)
+    # where p is a polygon or multipolygon (can it be a more general geometry?)
     new_clipped = []
     for b in boundary:
         for i in range(len(polygons)):
@@ -446,7 +452,7 @@ def clip(polygons, boundary):
 def plot_helperGNUplot(
     C_3D,
     A,
-    polygons,
+    polygons, #power cells
     bbox,
     boundary, #of state
     boundary_census_shapefile_name,
