@@ -101,12 +101,23 @@ shapestate_data/cb_2017_us_state_500k.shp:
 # .PRECIOUS: shapestate_data/cb_2017_us_state_500k.shp
 
 #################
-################# 2. census_block.py  
+################# 2. preprocess_census_block.py  
 #################
 
-$(STATES:%=$(OUT)/census_block/%): $(OUT)/census_block/%: data/%_census_blocks census_block.py
-	@ mkdir -p $(OUT)/census_block
-	python3 census_block.py data/$*_census_blocks/tabblock2010_$($*_POPID)_pophu $@
+$(STATES:%=$(OUT)/preprocess_census_block/%): $(OUT)/preprocess_census_block/%: data/%_census_blocks preprocess_census_block.py census_block_file.py
+	@ mkdir -p $(OUT)/preprocess_census_block
+	python3 preprocess_census_block.py data/$*_census_blocks/tabblock2010_$($*_POPID)_pophu $@
+	@ test -s $@
+
+# .PRECIOUS: $(OUT)/census_block/%
+
+#################
+################# 2.5 get_census_block_points.py  
+#################
+
+$(STATES:%=$(OUT)/get_census_block_points/%): $(OUT)/get_census_block_points/%: $(OUT)/preprocess_census_block/% get_census_block_points.py census_block_file.py
+	@ mkdir -p $(OUT)/get_census_block_points
+	python3 get_census_block_points.py $< $@
 	@ test -s $@
 
 # .PRECIOUS: $(OUT)/census_block/%
@@ -124,7 +135,7 @@ TX_DISTRICTS = 36
 
 RI_DISTRICTS = 2
 
-$(STATES:%=$(OUT)/do_redistrict/%): $(OUT)/do_redistrict/%: $(OUT)/census_block/% do_redistrict
+$(STATES:%=$(OUT)/do_redistrict/%): $(OUT)/do_redistrict/%: $(OUT)/get_census_block_points/% do_redistrict
 	@ mkdir -p $(OUT)/do_redistrict
 	./do_redistrict $($*_DISTRICTS) $< > $@
 	@ test -s $@
@@ -135,9 +146,9 @@ $(STATES:%=$(OUT)/do_redistrict/%): $(OUT)/do_redistrict/%: $(OUT)/census_block/
 ################# 3. prepare_ILP.py
 #################
 
-$(STATES:%=$(OUT)/prepare_ILP/%): $(OUT)/prepare_ILP/%: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_500k* data/%_census_blocks prepare_ILP.py
+$(STATES:%=$(OUT)/prepare_ILP/%): $(OUT)/prepare_ILP/%: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_500k* $(OUT)/preprocess_census_block/% prepare_ILP.py
 	@ mkdir -p $(OUT)/prepare_ILP
-	python3 prepare_ILP.py $* shapestate_data/cb_2017_us_state_500k data/$*_census_blocks/tabblock2010_$($*_POPID)_pophu $< $@
+	python3 prepare_ILP.py $* shapestate_data/cb_2017_us_state_500k $(OUT)/preprocess_census_block/$* $< $@
 	@ test -s $@
 
 # .PRECIOUS: $(OUT)/prepare_ILP/%
@@ -162,16 +173,16 @@ $(STATES:%=$(OUT)/split_pulp/%): $(OUT)/split_pulp/%: $(OUT)/prepare_ILP/% $(SPL
 
 ## main_script with reunification
 
-$(STATES:%=$(OUT)/main_script/%_blocks): $(OUT)/main_script/%_blocks: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_500k* data/%_census_blocks $(OUT)/split_pulp/% main_script.py main_plot.py
+$(STATES:%=$(OUT)/main_script/%_blocks): $(OUT)/main_script/%_blocks: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_500k* $(OUT)/preprocess_census_block/% $(OUT)/split_pulp/% main_script.py main_plot.py
 	@ mkdir -p $(OUT)/main_script
-	python3 main_script.py $* $(OUT)/do_redistrict/$* shapestate_data/cb_2017_us_state_500k data/$*_census_blocks/tabblock2010_$($*_POPID)_pophu $(OUT)/split_pulp/$* $@
+	python3 main_script.py $* $(OUT)/do_redistrict/$* shapestate_data/cb_2017_us_state_500k $(OUT)/preprocess_census_block/$* $(OUT)/split_pulp/$* $@
 	@ test -s $@
 
 # .PRECIOUS: $(OUT)/main_script/%_blocks
 
 ## main_script without reunification
 
-$(STATES:%=$(OUT)/main_script/%_districts): $(OUT)/main_script/%_districts: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_500k* data/%_census_blocks $(OUT)/split_pulp/% main_script.py
+$(STATES:%=$(OUT)/main_script/%_districts): $(OUT)/main_script/%_districts: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_500k* $(OUT)/split_pulp/% main_script.py
 	@ mkdir -p $(OUT)/main_script
 	python3 main_script.py $* $(OUT)/do_redistrict/$* shapestate_data/cb_2017_us_state_500k $@
 	@ test -s $@
