@@ -24,7 +24,7 @@ def get(census_block_plus_collection, cells):
         [] for _ in range(len(cells))
     ]  # boundary vertices intersecting district i
     blocks_plus = []
-    decided_IDs = []
+    decided_IDs = set()
     for block, relevant_district_items in census_block_plus_collection:
         if block.ID % 10000 == 1: print("block_bfs.py phase 1", block.ID)
         blocks_plus.append((block, relevant_district_items))
@@ -59,7 +59,7 @@ def get(census_block_plus_collection, cells):
         #Find largest connected component of internal vertices
         def internal(v):
             return v not in boundary_vertices
-        print("block_bfs phase 2")
+        print("block_bfs phase 2, district", i)
         component_reps, v2component_number, sizes = G.connected_components(internal)
         big_component_number = max(range(len(sizes)), key = lambda j:sizes[j])
         #BFS to find parents/dependees
@@ -67,7 +67,7 @@ def get(census_block_plus_collection, cells):
         core = [v for v in range(G.num_vertices()) if v in v2component_number and v2component_number[v] == big_component_number]
         waiting = deque(core)
         visited = set(core)
-        decided_IDs.extend([vertex2block_plus[v][0].ID for v in core if v in vertex2block_plus]) # Don't need to consider vertices corresponding to inner boundaries---they don't correspond to blocks
+        decided_IDs.update([vertex2block_plus[v][0].ID for v in core if v in vertex2block_plus]) # Don't need to consider vertices corresponding to inner boundaries---they don't correspond to blocks
         counter = 0
         while len(waiting) > 0:
             if counter % 10000 == 0: print("block_bfs.py phase 2, counter ", counter)
