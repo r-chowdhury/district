@@ -1,3 +1,5 @@
+from math import sqrt
+
 def distsq(center3d, pt2d):
     x = center3d[0] - pt2d.x
     y = center3d[1] - pt2d.y
