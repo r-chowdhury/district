@@ -29,14 +29,14 @@ def test(state_abbreviation, state_boundary_shapefilename, census_shapefilename,
             item.population = district2pop[item.ID] if item.ID in district2pop else 0
         return y
     start_time = time.clock()
-    L = list(census_block_file.read(shapefilename))
+    L = list(census_block_file.read(census_shapefilename))
     print("time 1 ", time.clock() - start_time)
     start_time = time.clock()
     L = list(closest.gen(L, C_3D))
     print("time 2 ", time.clock() - start_time)
     start_time = time.clock()
     L = list(relevant_districts.gen(L, G))
-    L = list(census_block_district_intersection.gen(L, cells))
+    L = list(census_block_district_intersection.gen(L, cells, len(L)))
     print("time 3 ", time.clock() - start_time)
     start_time = time.clock()
     L = list(areas_of_intersection.gen(L, cells))
@@ -70,6 +70,7 @@ counter = 0
 for census_block, relevant_district_items in test(state_abbreviation, state_boundary_shapefilename, shapefilename, assignment_filename):
     if counter % 10000 == 0: print("counter", counter)
     counter = counter + 1
+    if len(relevant_district_items)  == 1: continue
     fout.write(str(census_block.ID)+" ")
     for item in relevant_district_items:   #district, area, dependent in zip(relevant_districts, areas, dependents):
         for value in [item.ID, item.population, item.area, item.dependee]:
