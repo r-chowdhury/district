@@ -1,5 +1,5 @@
 import census_block_file
-import closest
+import closest_kd
 import relevant_districts
 import areas_of_intersection
 import initial_population_assignment
