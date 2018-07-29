@@ -9,6 +9,9 @@ import census_block_file
 import district_graph
 # from matplotlib import colors as mcolors
 import Voronoi_boundaries as vb
+import closest_kd
+import relevant_districts
+import census_block_district_intersection
 
 colors = [
     "red",  # ff0000 = 255   0   0
@@ -387,7 +390,10 @@ def GNUplot(
         GNUplot_polygon(pol, f, col)
 
     if boundary_census_shapefile_name != "":
-        for block, district_items in census_block_district_intersection(relevant_districts(closest.gen(census_block_file.read(boundary_census_shapefile_name), C), G), cells):
+        L = list(census_block_file.read(boundary_census_shapefile_name))
+        L = list(closest_kd.gen(L, C))
+        L = list(relevant_districts.gen(L, G))
+        for block, district_items in census_block_district_intersection.gen(L, power_cells, len(L)):
             blockid = block.ID
             if blockid in boundary_census_assign:
                 temp =  clip([block.polygon], boundary)
