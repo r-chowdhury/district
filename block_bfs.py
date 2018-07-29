@@ -1,11 +1,30 @@
 """
-Goal: for each census block and each district to which the census block could be assigned,
-find the neighboring census block that is closer to the center.
+For each district, build a graph of the blocks that overlap that district.  Find the connected components,
+ and find the connected component with the greatest number of vertices.
+ This component is the *core* of the district.  Compute a breadth-first-search tree with core as root.
+ For each block belonging to the core of a district, the block can be assigned only to that district.
+ For a block not belonging to the core, the set of candidate districts consists of the set of district it overlaps,
+ together with the set of candidate districts of ancestors.  For each candidate district, compute the block's 
+ dependee as follows:
+  (1) if the block overlaps the candidate district then the block's dependee for that district is the BFS parent in the BFS from that district;
+  (2) if a proper ancestor in the BFS tree for another district intersects the candidate district then the dependee is the parent in that BFS tree.
 
-Maybe an improvement would be to write to temporary file the blocks, organized by relevant district,
-and then read them in one by one so that the program doesn't use so much memory.
+The data structures used:
+ * block_id2block_plus, which maps a block's ID to a pair consisting of the census block object and a list of assignment element objects
+ * relevant_blocks, which maps a district ID to the list of block objects (maybe it should be the IDs) that intersect that district.
+ * block_id2relevant_districts, which maps the ID of a block to the districts overlapping that block.
+ * boundary_block_IDS, which includes the ID of every block that intersects multiple districts.
+ * decided_IDs, which includes the IDs of blocks belonging to cores of districts.
+
+For each district, a graph G is built of the relevant blocks.
+ * vertex2block_ID maps each vertex of this graph to the corresponding block ID.  Note that
+   some vertices of the graph represent the interior boundaries of polygons of blocks; these do not
+   correspond to blocks so do not appear in vertex2block_ID.
+
+
 """
 from embedded_graph import EGraph
+from relevant_districts import Relevant_District_Item
 
 # from shapely.geometry import LineString, Point
 from collections import deque
@@ -16,18 +35,15 @@ import time
 
 
 def get(census_block_plus_collection, cells):
-    debugflag = True
-    time_start = time.clock()
     block_id2block_plus = {}
     boundary_block_IDs = set()
     relevant_blocks = [
         [] for _ in range(len(cells))
     ]  # boundary vertices intersecting district i
-    blocks_plus = []
     decided_IDs = set()
     for block, relevant_district_items in census_block_plus_collection:
         if block.ID % 10000 == 1: print("block_bfs.py phase 1", block.ID)
-        blocks_plus.append((block, relevant_district_items))
+        block_id2block_plus[block.ID] = block, relevant_district_items
         #Build set of IDs of blocks that are boundary blocks
         if len(relevant_district_items)> 1:
             boundary_block_IDs.add(block.ID)
@@ -39,9 +55,9 @@ def get(census_block_plus_collection, cells):
         #Build graph of blocks relevant to power cell i
         G = EGraph()
         boundary_vertices = set()
-        vertex2block_plus = {}  # maps a vertex to corresponding block and associated items
+        vertex2block_ID = {}  # maps a vertex to corresponding block ID
         for block in relevant_blocks[i]:
-            vertex2block_plus[G.num_vertices()] = block, relevant_district_items
+            vertex2block_ID[G.num_vertices()] = block.ID
             if block.ID in boundary_block_IDs:
                 boundary_vertices.add(G.num_vertices())
             #if block.ID in boundary_block_IDs and block.population == 0:
@@ -67,8 +83,9 @@ def get(census_block_plus_collection, cells):
         core = [v for v in range(G.num_vertices()) if v in v2component_number and v2component_number[v] == big_component_number]
         waiting = deque(core)
         visited = set(core)
-        decided_IDs.update([vertex2block_plus[v][0].ID for v in core if v in vertex2block_plus]) # Don't need to consider vertices corresponding to inner boundaries---they don't correspond to blocks
+        decided_IDs.update([vertex2block_ID[v] for v in core if v in vertex2block_ID]) # Don't need to consider vertices corresponding to inner boundaries---they don't correspond to blocks
         counter = 0
+        vertex2candidate_districts = [[] for _ in range(G.num_vertices())]
         while len(waiting) > 0:
             if counter % 10000 == 0: print("block_bfs.py phase 2, counter ", counter)
             counter = counter + 1
@@ -77,12 +94,24 @@ def get(census_block_plus_collection, cells):
                 if w not in visited:
                     visited.add(w)
                     waiting.appendleft(w)
-                    if w in vertex2block_plus and v in vertex2block_plus: # Perhaps these vertices correspond to inner boundaries
-                        for item in vertex2block_plus[w][1]:
+                    if w in vertex2block_ID and v in vertex2block_ID: # Perhaps these vertices correspond to inner boundaries
+                        #if not (i.e. if they correspond to blocks)
+                        #Add dependee for current district
+                        for item in block_id2block_plus[vertex2block_ID[w]][1]: 
                             if item.ID == i:
-                                item.dependee = vertex2block_plus[v][0].ID
+                                item.dependee = vertex2block_ID[v]
                                 break
-    return [x for x in blocks_plus if x[0].ID not in decided_IDs]
+                        #Add items with dependee for foreign districts that are relevant to parent
+                        candidate_districts = [item.ID for item in block_id2block_plus[vertex2block_ID[w]][1]]
+                        for parent_candidate_district in vertex2candidate_districts[v]:
+                            if parent_candidate_district != i and parent_candidate_district not in candidate_districts:
+                                item = Relevant_District_Item(parent_candidate_district)
+                                item.area = 0 # zero area of intersection with the foreign district
+                                item.dependee = vertex2block_ID[v]
+                                block_id2block_plus[vertex2block_ID[w]][1].append(item)
+                        #Record all relevant districts with vertex w
+                        vertex2candidate_districts[w] = [item.ID for item in block_id2block_plus[vertex2block_ID[w]][1]]
+    return [x for ID, x in block_id2block_plus.items() if ID not in decided_IDs]
 
 """
 import census_block
