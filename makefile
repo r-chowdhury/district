@@ -52,6 +52,8 @@ OUT = makefile_outputs
 STATES = AL CA FL IL NY TX RI
 # RI is just for testing
 
+# STATES = AL AK AZ AR CA CO CT DE DC FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY
+
 # for "make pdfs"
 
 pdfs: $(STATES)
@@ -69,14 +71,66 @@ $(STATES): %: $(OUT)/main_script/%_blocks.pdf $(OUT)/main_script/%_districts.pdf
 
 downloads: $(STATES:%=data/%_census_blocks)
 
-AL_POPID = 01
-CA_POPID = 06
-FL_POPID = 12
-IL_POPID = 17
-NY_POPID = 36
-TX_POPID = 48
+AL_POPID = 01   # Alabama
+AK_POPID = 02   # Alaska
+AZ_POPID = 04   # Arizona
+AR_POPID = 05   # Arkansas
+CA_POPID = 06   # California
+CO_POPID = 07   # Colorado
+CT_POPID = 09   # Connecticut
+DE_POPID = 10   # Delaware
+# DC_POPID = 11   # District of Columbia
+FL_POPID = 12   # Florida
+GA_POPID = 13   # Georgia
+HI_POPID = 15   # Hawaii
+ID_POPID = 16   # Idaho
+IL_POPID = 17   # Illinois
+IN_POPID = 18   # Indiana
+IA_POPID = 19   # Iowa
+KS_POPID = 20   # Kansas
+KY_POPID = 21   # Kentucky
+LA_POPID = 22   # Louisiana
+ME_POPID = 23   # Maine
+MD_POPID = 24   # Maryland
+MA_POPID = 25   # Massachusetts
+MI_POPID = 26   # Michigan
+MN_POPID = 27   # Minnesota
+MS_POPID = 28   # Mississippi
+MO_POPID = 29   # Missouri
+MT_POPID = 30   # Montana
+NE_POPID = 31   # Nebraska
+NV_POPID = 32   # Nevada
+NH_POPID = 33   # New Hampshire
+NJ_POPID = 34   # New Jersey
+NM_POPID = 35   # New Mexico
+NY_POPID = 36   # New York
+NC_POPID = 37   # North Carolina
+ND_POPID = 38   # North Dakota
+OH_POPID = 39   # Ohio
+OK_POPID = 40   # Oklahoma
+OR_POPID = 41   # Oregon
+PA_POPID = 42   # Pennsylvania
+RI_POPID = 44   # Rhode Island
+SC_POPID = 45   # South Carolina
+SD_POPID = 46   # South Dakota
+TN_POPID = 47   # Tennessee
+TX_POPID = 48   # Texas
+UT_POPID = 49   # Utah
+VT_POPID = 50   # Vermont
+VA_POPID = 51   # Virginia
+WA_POPID = 53   # Washington
+WV_POPID = 54   # West Virginia
+WI_POPID = 55   # Wisconsin
+WY_POPID = 56   # Wyoming
 
-RI_POPID = 44
+# AL_POPID = 01
+# CA_POPID = 06
+# FL_POPID = 12
+# IL_POPID = 17
+# NY_POPID = 36
+# TX_POPID = 48
+
+# RI_POPID = 44
 
 $(STATES:%=data/%_census_blocks): data/%_census_blocks:
 	@ rm -rf tabblock2010_$($*_POPID)_pophu.zip
