@@ -46,10 +46,10 @@ def input_boundary_districts(input):
     dependencies = []
     district_surpluses = []
 
-    for line in input:
-        line = [int(x) for x in line.split()]
-        assert len(line) and set(line).issubset(set([0, 1]))
-        district_surpluses = line
+    line = next(input)
+    line = [int(x) for x in line.split()]
+    assert len(line) and set(line).issubset(set([0, 1]))
+    district_surpluses = line
 
     for line in input:
         # <block ID> (<center/district ID> <population> <area of intersection> <dependee>)*
