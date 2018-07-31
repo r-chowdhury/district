@@ -210,6 +210,7 @@ def pulp_assign(solver, input):
     print_log("max discrepancy:", max_discrepancy.value())
     print_log(
         f("number of refugee blocks: {refugee_blocks.value()}")
+        +
         f("(of {len(preferred_districts)} with preferred_districts)")
     )
 
