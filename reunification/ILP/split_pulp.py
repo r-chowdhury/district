@@ -75,7 +75,8 @@ def input_boundary_districts(input):
                     dependencies.append(((b, d), (dependee_block, d)))
 
     for d in districts:
-        districts[d].pop -= district_surpluses[d]
+        districts[d].min_pop = districts[d].pop - district_surpluses[d]
+        districts[d].max_pop = districts[d].min_pop + 1
 
     dependencies = [
         ((b1, d1), (b2, d2)) for ((b1, d1), (b2, d2)) in dependencies if b2 in blocks
@@ -149,8 +150,8 @@ def pulp_assign(solver, input):
                         blocks[b].pop * assignments[b, d] for b in districts[d].nbrs
                     ),
                     # max discrepancy
-                    assigned_pop[d] <= districts[d].pop + max_discrepancy + 1,
-                    assigned_pop[d] >= districts[d].pop - max_discrepancy,
+                    assigned_pop[d] <= districts[d].max_pop + max_discrepancy,
+                    assigned_pop[d] >= districts[d].min_pop - max_discrepancy,
                 ]
             )
 
