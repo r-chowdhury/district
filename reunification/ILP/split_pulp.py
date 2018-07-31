@@ -233,7 +233,7 @@ def check_assignment(blocks, districts, assignment, discrepancy):
     assert set(districts.keys()).issubset(set(pops.keys()))
 
     discrepancy2 = max(
-        max(districts[d].pop - pops[d], pops[d] - districts[d].pop - 1)
+        max(districts[d].min_pop - pops[d], pops[d] - districts[d].max_pop)
         for d in districts
     )
 
