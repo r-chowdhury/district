@@ -8,6 +8,7 @@ import block_bfs
 import join
 import Voronoi_boundaries
 import census_block_district_intersection
+import initial_discrepancy
 import time
 import sys
 
@@ -57,6 +58,9 @@ shapefilename = args.pop(0)
 assignment_filename = args.pop(0)
 output_filename = args.pop(0)
 fout = open(output_filename, 'w')
+for district_discrepancy in initial_discrepancy.find(assignment_filename):
+    fout.write(str(district_discrepancy)+" ")
+fout.write("\n")
 counter = 0
 for census_block, relevant_district_items in test(state_abbreviation, state_boundary_shapefilename, shapefilename, assignment_filename):
     if counter % 10000 == 0: print("counter", counter)
