@@ -77,8 +77,7 @@ def input_boundary_districts(input):
                     dependencies.append(((b, d), (dependee_block, d)))
 
     for d in districts:
-        districts[d].min_pop = districts[d].pop - district_surpluses[d]
-        districts[d].max_pop = districts[d].min_pop + 1
+        districts[d].target_pop = districts[d].pop - district_surpluses[d]
 
     dependencies = [
         ((b1, d1), (b2, d2)) for ((b1, d1), (b2, d2)) in dependencies if b2 in blocks
@@ -129,7 +128,9 @@ def pulp_assign(solver, input):
     constraints = []
 
     value = pulp.LpVariable("value")
-    max_discrepancy = pulp.LpVariable("max_discrepancy")
+    discrepancy = pulp.LpVariable("discrepancy")
+    max_above_target = pulp.LpVariable("max_above_target")
+    max_below_target = pulp.LpVariable("max_below_target")
     refugee_blocks = pulp.LpVariable("refugee_blocks")
     assignments = pulp.LpVariable.dicts(
         "a", edges.keys(), lowBound=0, upBound=1, cat=pulp.LpInteger
@@ -152,10 +153,12 @@ def pulp_assign(solver, input):
                         blocks[b].pop * assignments[b, d] for b in districts[d].nbrs
                     ),
                     # max discrepancy
-                    assigned_pop[d] <= districts[d].max_pop + max_discrepancy,
-                    assigned_pop[d] >= districts[d].min_pop - max_discrepancy,
+                    assigned_pop[d] <= districts[d].target_pop + max_above_target,
+                    assigned_pop[d] >= districts[d].target_pop - max_below_target,
                 ]
             )
+
+    constraints.append(discrepancy >= max_above_target + max_below_target)
 
     with timed("building refugee_blocks constraint"):
         preferred_districts = {}
@@ -174,8 +177,8 @@ def pulp_assign(solver, input):
                     if b in preferred_districts and preferred_districts[b] != d
                 ),
                 # ILP objective
-                value == max_discrepancy + 1.0 * refugee_blocks,
-                # max_discrepancy == 0
+                value == discrepancy + 0.01 * refugee_blocks,
+                # discrepancy == 0
             ]
         )
 
@@ -207,11 +210,10 @@ def pulp_assign(solver, input):
         finally:
             sys.stdout = tmp
 
-    print_log("max discrepancy:", max_discrepancy.value())
+    print_log("discrepancy:", discrepancy.value())
     print_log(
         f("number of refugee blocks: {refugee_blocks.value()}")
-        +
-        f("(of {len(preferred_districts)} with preferred_districts)")
+        + f("(of {len(preferred_districts)} with preferred_districts)")
     )
 
     assignment = {}
@@ -221,7 +223,7 @@ def pulp_assign(solver, input):
         assert len(d) == 1
         assignment[b] = d[0]
 
-    check_assignment(blocks, districts, assignment, max_discrepancy.value())
+    check_assignment(blocks, districts, assignment, discrepancy.value())
 
     return assignment
 
@@ -235,12 +237,10 @@ def check_assignment(blocks, districts, assignment, discrepancy):
 
     assert set(districts.keys()).issubset(set(pops.keys()))
 
-    discrepancy2 = max(
-        max(districts[d].min_pop - pops[d], pops[d] - districts[d].max_pop)
-        for d in districts
-    )
+    max_above_target = max(pops[d] - districts[d].target_pop for d in districts)
+    max_below_target = max(districts[d].target_pop - pops[d] for d in districts)
 
-    assert discrepancy2 == discrepancy
+    assert discrepancy == max_above_target + max_below_target
 
 
 if __name__ == "__main__":
