@@ -1,9 +1,11 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.5
 
 import sys
 from collections import defaultdict
 from contextlib import contextmanager
 from timeit import default_timer as timer
+
+from f_strings import f
 
 log = None
 
@@ -19,7 +21,7 @@ def timed(before):
     start = timer()
     yield
     stop = timer()
-    print_log(f" ({stop-start:.2g}s)", flush=True)
+    print_log(f(" ({stop-start:.2g}s)"), flush=True)
 
 
 def input_boundary_districts(input):
@@ -207,8 +209,8 @@ def pulp_assign(solver, input):
 
     print_log("max discrepancy:", max_discrepancy.value())
     print_log(
-        f"number of refugee blocks: {refugee_blocks.value()}"
-        f"(of {len(preferred_districts)} with preferred_districts)"
+        f("number of refugee blocks: {refugee_blocks.value()}")
+        f("(of {len(preferred_districts)} with preferred_districts)")
     )
 
     assignment = {}
@@ -248,7 +250,7 @@ if __name__ == "__main__":
 
     except ValueError:
         print(
-            f"usage: {cmd} solver in_filename out_filename log_filename",
+            f("usage: {cmd} solver in_filename out_filename log_filename"),
             file=sys.stderr,
         )
         sys.exit(-1)
