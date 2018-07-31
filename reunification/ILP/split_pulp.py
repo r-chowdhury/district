@@ -132,7 +132,7 @@ def pulp_assign(solver, input):
     assignments = pulp.LpVariable.dicts(
         "a", edges.keys(), lowBound=0, upBound=1, cat=pulp.LpInteger
     )
-    assigned_pop = pulp.LpVariable.dict("a", districts)
+    assigned_pop = pulp.LpVariable.dict("p", districts)
 
     with timed("building split constraints"):
         # assign each split to one center
