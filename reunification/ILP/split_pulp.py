@@ -177,7 +177,7 @@ def pulp_assign(solver, input):
                     if b in preferred_districts and preferred_districts[b] != d
                 ),
                 # ILP objective
-                value == discrepancy + 0.01 * refugee_blocks,
+                value == discrepancy  # + 0.01 * refugee_blocks,
                 # discrepancy == 0
             ]
         )
