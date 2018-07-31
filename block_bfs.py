@@ -72,6 +72,8 @@ def get(census_block_plus_collection, cells):
             #            print("block_bfs2 ", geometry_geom_type, " ID ", block.ID)
             #else:
             G.add_region(block.polygon) #will produce multiple vertices if polygon has internal boundaries
+            g = G.num_vertices() #for debugging
+            pass #for debugging
         #Find largest connected component of internal vertices
         def internal(v):
             return v not in boundary_vertices
@@ -85,32 +87,35 @@ def get(census_block_plus_collection, cells):
         visited = set(core)
         decided_IDs.update([vertex2block_ID[v] for v in core if v in vertex2block_ID]) # Don't need to consider vertices corresponding to inner boundaries---they don't correspond to blocks
         counter = 0
-        vertex2candidate_districts = [[] for _ in range(G.num_vertices())]
+        vertex2candidate_districts = [set() for _ in range(G.num_vertices())]
         while len(waiting) > 0:
             if counter % 10000 == 0: print("block_bfs.py phase 2, counter ", counter)
             counter = counter + 1
             v = waiting.pop()
+            v0 = v #find the vertex corresponding to the outer boundary of the polygon corresponding to v
+            while v0 not in vertex2block_ID:
+                v0 = v0 - 1
+            parent_block_ID = vertex2block_ID[v0]
             for w in G.neighbors(v):
                 if w not in visited:
                     visited.add(w)
                     waiting.appendleft(w)
-                    if w in vertex2block_ID and v in vertex2block_ID: # Perhaps these vertices correspond to inner boundaries
-                        #if not (i.e. if they correspond to blocks)
+                    if w in vertex2block_ID: # if w corresponds to a block (as opposed to corresponding to an inner boundary)
                         #Add dependee for current district
                         for item in block_id2block_plus[vertex2block_ID[w]][1]: 
                             if item.ID == i:
-                                item.dependee = vertex2block_ID[v]
+                                item.dependee = parent_block_ID
                                 break
                         #Add items with dependee for foreign districts that are relevant to parent
-                        candidate_districts = [item.ID for item in block_id2block_plus[vertex2block_ID[w]][1]]
-                        for parent_candidate_district in vertex2candidate_districts[v]:
-                            if parent_candidate_district != i and parent_candidate_district not in candidate_districts:
-                                item = Relevant_District_Item(parent_candidate_district)
-                                item.area = 0 # zero area of intersection with the foreign district
-                                item.dependee = vertex2block_ID[v]
-                                block_id2block_plus[vertex2block_ID[w]][1].append(item)
-                        #Record all relevant districts with vertex w
-                        vertex2candidate_districts[w] = [item.ID for item in block_id2block_plus[vertex2block_ID[w]][1]]
+                        native_districts = {item.ID for item in block_id2block_plus[vertex2block_ID[w]][1]} # districts overlapping the block
+                        vertex2candidate_districts[w] = native_districts | vertex2candidate_districts[v0] # native districts together with foreign districts
+                        for parent_candidate_district in vertex2candidate_districts[v0] - native_districts: #foreign only
+                            assert i in native_districts
+                            # Create a new relevant district item for each foreign district
+                            item = Relevant_District_Item(parent_candidate_district)
+                            item.area = 0 # zero area of intersection with the foreign district
+                            item.dependee = parent_block_ID
+                            block_id2block_plus[vertex2block_ID[w]][1].append(item)
     return [x for ID, x in block_id2block_plus.items() if ID not in decided_IDs]
 
 """
