@@ -44,6 +44,12 @@ def input_boundary_districts(input):
     blocks = defaultdict(lambda: Node())
     edges = defaultdict(lambda: Edge())
     dependencies = []
+    district_surpluses = []
+
+    for line in input:
+        line = [int(x) for x in line.split()]
+        assert len(line) and set(line).issubset(set([0, 1]))
+        district_surpluses = line
 
     for line in input:
         # <block ID> (<center/district ID> <population> <area of intersection> <dependee>)*
@@ -56,7 +62,8 @@ def input_boundary_districts(input):
             assert len(line) % n_per_block == 1, line
             b, *line = line
             for d, pop, area, dependee_block in (
-                line[n_per_block * i : n_per_block * (i + 1)] for i in range(int(len(line) / n_per_block))
+                line[n_per_block * i : n_per_block * (i + 1)]
+                for i in range(int(len(line) / n_per_block))
             ):
                 assert (b, d) not in edges
                 blocks[b].add_nbr(d)
@@ -67,9 +74,12 @@ def input_boundary_districts(input):
                 if dependee_block != b:
                     dependencies.append(((b, d), (dependee_block, d)))
 
-    dependencies = [((b1, d1), (b2, d2))
-                    for ((b1, d1), (b2, d2)) in dependencies
-                    if b2 in blocks]
+    for d in districts:
+        districts[d].pop -= district_surpluses[d]
+
+    dependencies = [
+        ((b1, d1), (b2, d2)) for ((b1, d1), (b2, d2)) in dependencies if b2 in blocks
+    ]
 
     assert all((b2, d2) in edges for (_, (b2, d2)) in dependencies)
 
@@ -121,7 +131,7 @@ def pulp_assign(solver, input):
     assignments = pulp.LpVariable.dicts(
         "a", edges.keys(), lowBound=0, upBound=1, cat=pulp.LpInteger
     )
-    discrepancies = pulp.LpVariable.dict("d", districts)
+    assigned_pop = pulp.LpVariable.dict("a", districts)
 
     with timed("building split constraints"):
         # assign each split to one center
@@ -132,17 +142,17 @@ def pulp_assign(solver, input):
         # discrepancy of each center
         for d in districts:
 
-            constraints.extend([
-                -discrepancies[d]
-                + districts[d].pop
-                - pulp.lpSum(
-                    blocks[b].pop * assignments[b, d] for b in districts[d].nbrs
-                )
-                == 0,
-                # max discrepancy
-                max_discrepancy - discrepancies[d] >= 0,
-                max_discrepancy + discrepancies[d] >= 0,
-            ])
+            constraints.extend(
+                [
+                    assigned_pop[d]
+                    == pulp.lpSum(
+                        blocks[b].pop * assignments[b, d] for b in districts[d].nbrs
+                    ),
+                    # max discrepancy
+                    assigned_pop[d] <= districts[d].pop + max_discrepancy + 1,
+                    assigned_pop[d] >= districts[d].pop - max_discrepancy,
+                ]
+            )
 
     with timed("building refugee_blocks constraint"):
         preferred_districts = {}
@@ -152,17 +162,19 @@ def pulp_assign(solver, input):
             if edges[b, d].area >= 0.95 * blocks[b].area:
                 preferred_districts[b] = d
 
-        constraints.extend([
-            refugee_blocks
-            == pulp.lpSum(
-                assignments[b, d]
-                for (b, d) in edges
-                if b in preferred_districts and preferred_districts[b] != d
-            ),
-            # ILP objective
-            value == max_discrepancy + 1.0 * refugee_blocks,
-            # max_discrepancy == 0
-        ])
+        constraints.extend(
+            [
+                refugee_blocks
+                == pulp.lpSum(
+                    assignments[b, d]
+                    for (b, d) in edges
+                    if b in preferred_districts and preferred_districts[b] != d
+                ),
+                # ILP objective
+                value == max_discrepancy + 1.0 * refugee_blocks,
+                # max_discrepancy == 0
+            ]
+        )
 
     # dependee_block_districts = defaultdict(lambda: set())
     # for (_, (dependee_block, d)) in dependencies:
@@ -193,8 +205,10 @@ def pulp_assign(solver, input):
             sys.stdout = tmp
 
     print_log("max discrepancy:", max_discrepancy.value())
-    print_log(f"number of refugee blocks: {refugee_blocks.value()}"
-              f"(of {len(preferred_districts)} with preferred_districts)")
+    print_log(
+        f"number of refugee blocks: {refugee_blocks.value()}"
+        f"(of {len(preferred_districts)} with preferred_districts)"
+    )
 
     assignment = {}
 
@@ -217,7 +231,10 @@ def check_assignment(blocks, districts, assignment, discrepancy):
 
     assert set(districts.keys()).issubset(set(pops.keys()))
 
-    discrepancy2 = max(abs(districts[d].pop - pops[d]) for d in districts)
+    discrepancy2 = max(
+        max(districts[d].pop - pops[d], pops[d] - districts[d].pop - 1)
+        for d in districts
+    )
 
     assert discrepancy2 == discrepancy
 
