@@ -49,11 +49,11 @@ BIN=cs2 do_redistrict test_initial_centers test_redistrict test_find_weights
 
 OUT = makefile_outputs
 
-STATES = AL CA FL IL NY TX RI
+# STATES = AL CA FL IL NY TX RI
 # RI is just for testing
 
-# STATES = AL AK AZ AR CA CO CT DE DC FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY
-
+STATES = AL AZ AR CA CO CT FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO NE NV NH NJ NM NY NC OH OK OR PA RI SC TN TX UT VA WA WV WI
+#states with single congressional districts: AK, DE, MT, ND, SD, VT, WY
 # for "make pdfs"
 
 pdfs: $(STATES)
@@ -76,7 +76,7 @@ AK_POPID = 02# Alaska
 AZ_POPID = 04# Arizona
 AR_POPID = 05# Arkansas
 CA_POPID = 06# California
-CO_POPID = 07# Colorado
+CO_POPID = 08# Colorado
 CT_POPID = 09# Connecticut
 DE_POPID = 10# Delaware
 # DC_POPID = 11# District of Columbia
