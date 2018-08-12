@@ -4,7 +4,8 @@ import sys
 import scipy.spatial as sp
 import shapely.geometry as sg
 from matplotlib import colors as mcolors
- 
+from util import vec, dotproduct, norm
+
 def Parse(filename):
     f = open(filename, "r")
     lines = f.readlines()
@@ -76,6 +77,20 @@ def find_region_containing(bounded_regions, pt):
     assert len(regions_containing) == 1
     return regions_containing[0]
 
+from util import norm
+
+def _remove_redundant(pts):
+    "Mutates a list of points to get rid of those points that are not needed to define polygon"
+    i = 0
+    while i < len(pts): #list pts changes during loop
+        #test if point i+1 is redundant
+        vec1 = vec(pts[i], pts[(i+1)%len(pts)])
+        vec2 = vec(pts[(i+1)%len(pts)], pts[(i+2)%len(pts)])
+        if dotproduct(vec1, vec2) >= .999999*norm(vec1)*norm(vec2):
+            del pts[(i+1)%len(pts)]
+        else:
+            i = i+1
+
 def power_cells(C_3D, bbox):
     minpt, maxpt = bbox
     extent = find_extent([minpt,maxpt])
@@ -94,8 +109,11 @@ def power_cells(C_3D, bbox):
                        if region != [] and not unbounded(region)]
     ordered_bounded_regions = [find_region_containing(bounded_regions, pt) for pt in C_3D]
     proj_regions = find_proj(ordered_bounded_regions)
-    return [sg.MultiPoint(region).convex_hull for region in proj_regions
-            if region != []]
+    polygons = [sg.MultiPoint(region).convex_hull for region in proj_regions] #if region != []]
+    exteriors = [list(gon.exterior.coords) for gon in polygons]
+    for L in exteriors:
+        _remove_redundant(L)
+    return [sg.Polygon(L) for L in exteriors]
 
 def power_cells_fromfile(filename):
     C_3D, A, assign_pairs = Parse(filename)
