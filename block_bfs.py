@@ -1,5 +1,4 @@
 from embedded_graph import EGraph
-import new_embedded_graph
 from relevant_districts import Relevant_District_Item
 from census_block import Intersection_Block
 from collections import deque
@@ -20,17 +19,14 @@ def get(census_block_plus_district_items_collection, cells, starting_number):
         block_ID2block_plus[block.ID] = (block, district_items)
         for district in district_items: # keys
             district2relevant_block_IDs[district].append(block.ID)
-    #log = open("log",'w')
     for i in range(len(cells)):
-        #log.write("district "+str(i)+"\n")
         #Build graph of blocks relevant to power cell i
         vertex2block_ID = {} #could use a list instead of a dictionary
         block_ID2vertices = {} #each value is a tuple of vertices
         boundary_vertices = set()
         n = int(1.2*len(district2relevant_block_IDs[i])) #estimate number of vertices
         m = int(.6*sum(num_polygon_segments(block_ID2block_plus[block_ID][0].polygon) for block_ID in district2relevant_block_IDs[i])) #estimate number of edges
-        #G = EGraph(m, n, 1e-12)
-        G = new_embedded_graph.EGraph(m, n, 1e-12)
+        G = embedded_graph.EGraph(m, n, 1e-12)
         for block_ID in district2relevant_block_IDs[i]:
             block_plus = block_ID2block_plus[block_ID]
             block = block_plus[0]
@@ -45,15 +41,10 @@ def get(census_block_plus_district_items_collection, cells, starting_number):
             for polygon in polygons:
                     assert polygon.geom_type == 'Polygon'
                     v = G.num_vertices() #Next vertex to be created
-                    #if v != G2.num_vertices():
-                    #        print("A")
                     current_vertices.append(v)
                     if is_multidistrict and block.population > 0:
                             boundary_vertices.add(v)
                     G.add_region(polygon)
-                    #G2.add_region(polygon)
-                    #if G.neighbors(v) != G2.neighbors(v):
-                    #        print("B")
                     current_block_ID = block_ID
                     if divide_up_block:
                             #create new artificial block whose polygon is intersection with district
@@ -113,8 +104,6 @@ def get(census_block_plus_district_items_collection, cells, starting_number):
                         vertex2candidate_districts[w] = native_districts | vertex2candidate_districts[v0]
                         #only update relevant_district_items once per block_ID for this district
                         if w == min(block_ID2vertices[block_ID]):
-                            #log.write("block ID"+str(block_ID)+" district "+str(i)+" dependee "+str(parent_block_ID)+"\n")
-                            #log.flush()
                             relevant_district_items[i].dependee = parent_block_ID
                             for parent_candidate_district in vertex2candidate_districts[v0] - native_districts: #foreign only
                                 relevant_district_items[parent_candidate_district] = Relevant_District_Item(dependee=parent_block_ID)
