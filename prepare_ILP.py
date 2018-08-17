@@ -1,18 +1,17 @@
 import census_block_file
 import closest_kd
 import relevant_districts
-import areas_of_intersection
+#import areas_of_intersection
 import initial_population_assignment
 import district_graph
 import block_bfs
-import join
 import Voronoi_boundaries
-import census_block_district_intersection
+#import census_block_district_intersection
 import initial_discrepancy
 import time
 import sys
 
-def test(state_abbreviation, state_boundary_shapefilename, census_shapefilename, assignment_filename):
+def test(state_abbreviation, state_boundary_shapefilename, census_shapefilename, assignment_filename, block_output_file):
     assignment_file = open(assignment_filename)
     k, n = [int(x) for x in assignment_file.readline().split()]
     C_3D = [tuple(float(x) for x in assignment_file.readline().split()) for _ in range(k)]
@@ -33,21 +32,23 @@ def test(state_abbreviation, state_boundary_shapefilename, census_shapefilename,
     print("time 2 ", time.clock() - start_time)
     start_time = time.clock()
     L = list(relevant_districts.gen(L, G))
-    L = list(census_block_district_intersection.gen(L, cells, len(L)))
+    #L = list(census_block_district_intersection.gen(L, cells, len(L)))
     print("time 3 ", time.clock() - start_time)
     start_time = time.clock()
-    L = list(areas_of_intersection.gen(L, cells))
-    print("time 4 ", time.clock() - start_time)
-    start_time = time.clock()
-    L = list(block_bfs.get(L, cells))
+    #L = list(areas_of_intersection.gen(L, cells))
+    L, decided_block_IDs = block_bfs.get(L, cells, len(L))
     print("time 5 ", time.clock() - start_time)
-    d = {block.ID:(block, rel) for block,rel in L}
+    #Write blocks to block_output_file
+    for block, _ in L:
+        census_block_file.write_census_block(block_output_file, block.ID, block.block_type, block.population, block.polygon)
+    block_output_file.close()
+    d = {block.ID:(block, rel) for block,rel in L if block.ID not in decided_block_IDs}
     power_diagram_result = {id:pop_assignment for id, pop_assignment in initial_population_assignment.gen(assignment_filename)}
     #Here, item.population is the population of the block assigned to the district by the balanced solution
     #If the block is not represented in power_diagram_result, the block's population is zero.
     for block, rel in L:
-            for item in rel:
-                item.population = power_diagram_result[block.ID].get(item.ID, 0) if block.ID in power_diagram_result else 0
+            for district, info in rel.items():
+                info.population = power_diagram_result[block.ID].get(district, 0) if block.ID in power_diagram_result else 0
             yield block, rel
 
 
@@ -57,17 +58,16 @@ state_boundary_shapefilename = args.pop(0)
 shapefilename = args.pop(0)
 assignment_filename = args.pop(0)
 output_filename = args.pop(0)
+processed_block_filename = args.pop(0)
 fout = open(output_filename, 'w')
+block_output_file = open(processed_block_filename, 'wb')
 for district_discrepancy in initial_discrepancy.find(assignment_filename):
     fout.write(str(district_discrepancy)+" ")
 fout.write("\n")
-counter = 0
-for census_block, relevant_district_items in test(state_abbreviation, state_boundary_shapefilename, shapefilename, assignment_filename):
-    if counter % 10000 == 0: print("counter", counter)
-    counter = counter + 1
+for census_block, relevant_district_items in test(state_abbreviation, state_boundary_shapefilename, shapefilename, assignment_filename, block_output_file):
     fout.write(str(census_block.ID)+" ")
-    for item in relevant_district_items:
-        for value in [item.ID, item.population, item.area, item.dependee]:
+    for district, info in relevant_district_items.items():
+        for value in [district, info.population, info.area, info.dependee if info.dependee != -1 else census_block.ID]:
             fout.write(str(value)+" ")
     fout.write("\n")
 fout.close()
