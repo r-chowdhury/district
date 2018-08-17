@@ -30,3 +30,8 @@ def find_intersecting(linear_ring, line_string):
     #don't return anything if nothing intersects
 
     
+def polygon_points(polygon):
+    return frozenset(polygon.exterior.coords).union(*(i.coords for i in polygon.interiors))
+
+def num_polygon_segments(polygon):
+    return len(polygon.exterior.coords)-1 + sum(len(interior.coords) - 1 for interior in polygon.interiors)
