@@ -26,7 +26,7 @@ def get(census_block_plus_district_items_collection, cells, starting_number):
         boundary_vertices = set()
         n = int(1.2*len(district2relevant_block_IDs[i])) #estimate number of vertices
         m = int(.6*sum(num_polygon_segments(block_ID2block_plus[block_ID][0].polygon) for block_ID in district2relevant_block_IDs[i])) #estimate number of edges
-        G = embedded_graph.EGraph(m, n, 1e-12)
+        G = EGraph(m, n, 1e-12)
         for block_ID in district2relevant_block_IDs[i]:
             block_plus = block_ID2block_plus[block_ID]
             block = block_plus[0]
