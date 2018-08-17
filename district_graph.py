@@ -10,7 +10,7 @@ def find_bbox(state_abbreviation, state_boundary_shapefilename, C_3D):
 
 def get(C_3D, cells, bbox):
     '''returns graph'''
-    G = embedded_graph.EGraph()
+    G = embedded_graph.EGraph(6*len(cells), len(cells)+1)
     for cell in cells:
         G.add_region(cell, True) #get rid of extraneous points
     G.find_outer()
