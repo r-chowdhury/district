@@ -4,7 +4,6 @@ import sys
 from embedded_graph import EGraph
 import census_block_file
 import census_block
-from pympler import asizeof
 
 def union_bounds(bounds1, bounds2):
     return (min(bounds1[0],bounds2[0]),min(bounds1[1],bounds2[1]),max(bounds1[2],bounds2[2]),max(bounds1[3],bounds2[3]))
