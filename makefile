@@ -289,7 +289,7 @@ $(STATES:%=$(OUT)/verify/%): $(OUT)/verify/%: $(OUT)/split_pulp/% $(OUT)/prepare
 
 ## main_script with reunification
 
-$(STATES:%=$(OUT)/main_script/%_blocks): $(OUT)/main_script/%_blocks: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_500k* $(OUT)/prepare_ILP/%_blocks $(OUT)/split_pulp/% main_script.py main_plot.py
+$(STATES:%=$(OUT)/main_script/%_blocks): $(OUT)/main_script/%_blocks: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_500k* $(OUT)/split_pulp/% $(OUT)/prepare_ILP/%_blocks main_script.py main_plot.py
 	@ mkdir -p $(OUT)/main_script
 	python3 main_script.py $* $(OUT)/do_redistrict/$* shapestate_data/cb_2017_us_state_500k $(OUT)/preprocess_census_block/$* $(OUT)/split_pulp/$* $@
 	@ test -s $@
