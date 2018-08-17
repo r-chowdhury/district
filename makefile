@@ -251,10 +251,11 @@ $(STATES:%=$(OUT)/do_redistrict/%): $(OUT)/do_redistrict/%: $(OUT)/get_census_bl
 #################
 ################# 3. prepare_ILP.py
 #################
+#example: python3 prepare_ILP.py FL shapestate_data/cb_2017_us_state_500k makefile_outputs/preprocess_census_block/FL makefile_outputs/do_redistrict/FL makefile_outputs/prepare_ILP/FL
 
 $(STATES:%=$(OUT)/prepare_ILP/%): $(OUT)/prepare_ILP/%: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_500k* $(OUT)/preprocess_census_block/% prepare_ILP.py
 	@ mkdir -p $(OUT)/prepare_ILP
-	python3 prepare_ILP.py $* shapestate_data/cb_2017_us_state_500k $(OUT)/preprocess_census_block/$* $< $@
+	python3 prepare_ILP.py $* shapestate_data/cb_2017_us_state_500k $(OUT)/preprocess_census_block/$* $< $@ $@_blocks
 	@ test -s $@
 
 # .PRECIOUS: $(OUT)/prepare_ILP/%
@@ -262,7 +263,7 @@ $(STATES:%=$(OUT)/prepare_ILP/%): $(OUT)/prepare_ILP/%: $(OUT)/do_redistrict/% s
 #################
 ################# 4. split_pulp -- solve ILP
 #################
-
+#example: python3 reunification/ILP/split_pulp.py gurobi makefile_outputs/prepare_ILP/RI makefile_outputs/split_pulp/RI makefile_outputs/split_pulp/RI.log
 SPLIT_PULP = reunification/ILP/split_pulp.py
 SOLVER = gurobi
 
@@ -274,12 +275,21 @@ $(STATES:%=$(OUT)/split_pulp/%): $(OUT)/split_pulp/%: $(OUT)/prepare_ILP/% $(SPL
 # .PRECIOUS: $(OUT)/split_pulp/%
 
 #################
+################# 4.5. verify
+#################
+
+$(STATES:%=$(OUT)/verify/%): $(OUT)/verify/%: $(OUT)/split_pulp/% $(OUT)/prepare_ILP/%_blocks $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_500k* verify.py
+	@ mkdir -p $(OUT)/verify
+	python3 verify.py $* shapestate_data/cb_2017_us_state_500k $(OUT)/prepare_ILP/$*_blocks $(OUT)/do_redistrict/$* $(OUT)/split_pulp/$* $(OUT)/verify/$*.log
+	touch $(OUT)/verify/$*
+
+#################
 ################# 5. main_script
 #################
 
 ## main_script with reunification
 
-$(STATES:%=$(OUT)/main_script/%_blocks): $(OUT)/main_script/%_blocks: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_500k* $(OUT)/preprocess_census_block/% $(OUT)/split_pulp/% main_script.py main_plot.py
+$(STATES:%=$(OUT)/main_script/%_blocks): $(OUT)/main_script/%_blocks: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_500k* $(OUT)/prepare_ILP/%_blocks $(OUT)/split_pulp/% main_script.py main_plot.py
 	@ mkdir -p $(OUT)/main_script
 	python3 main_script.py $* $(OUT)/do_redistrict/$* shapestate_data/cb_2017_us_state_500k $(OUT)/preprocess_census_block/$* $(OUT)/split_pulp/$* $@
 	@ test -s $@

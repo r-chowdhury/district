@@ -1,7 +1,8 @@
 import shapefile
-from shapely.geometry import shape, Polygon, MultiPolygon  # ,LineString
+from shapely.geometry import shape, Point, Polygon, MultiPolygon  # ,LineString
 import sys
-
+from util import polygon_points
+import census_block_file
 
 class Assignment_Element:
     # block_ID, center_ID, dependent_block_IDs, subpopulation, subarea
@@ -9,11 +10,25 @@ class Assignment_Element:
         self.block_ID = block_ID
         self.center_ID = center_ID
 
+'''
+   type 0: artificial census block resulting from multipolygon original census block with zero population
+   type 1: artificial census block resulting from multipolygon original census block with positive population
+   type 2: artificial census block representing infinite region
+   type 3: artificial census block resulting from fill-in (currently none)
+   type 4: artificial census block resulting from intersection with district
+   types 5, ... : ordinary census block (type might specify which)
+'''
+block_types = {'multipolygon-zero':1, 'multipolygon-positive':2, 'infinite-region':3, 'fill-in':4,'intersection':5,'subblock':6, 'superblock':7, 'ordinary':8}
+
+
+def has_original_polygon(block_type):
+    return False #block_type == 4
 
 class Census_Block:
 
-    def __init__(self, ID, polyg, population):
+    def __init__(self, ID, block_type, polyg, population):
         self.ID = ID
+        self.block_type = block_type
         assert type(polyg) == Polygon
         self.polygon = polyg
         self.population = population
@@ -27,6 +42,56 @@ class Census_Block:
             centroid = self.polygon.centroid
             self.centroid_cache = centroid if self.polygon.contains(centroid) else self.polygon.representative_point()
         return self.centroid_cache
+    
+    def superblock(self, subblock_IDs):
+        return Superblock(self.ID, self.polygon, subblock_IDs)
+    
+    def add_to_graph(self, G):
+        G.add_region(self.polygon)
+    
+    def write(self, fout):
+        census_block_file.write_census_block(fout, self.ID, self.block_type, self.population, self.polygon)
+
+class Intersection_Block(Census_Block):
+    '''This class is used for representing artificial census blocks
+       derived by intersecting census block with district.
+    '''
+    def __init__(self, ID, polygon, original_ID):
+        self.ID =  ID
+        self.polygon = polygon
+        assert type(original_ID)==int
+        self.original_ID = original_ID
+        self.population = 0
+        #self.pts = polygon_points(original_polygon) & polygon_points(polygon)
+    
+    @property
+    def block_type(self): return block_types['intersection']
+    
+    def add_to_graph(self, G):
+        G.add_region(self.polygon) #self.original_polygon, pts = self.pts)
+    
+    def write(self, fout):
+        census_block_file.write_census_block(fout, self.ID, self.block_type, 0, self.polygon, self.original_ID)
+
+class Subblock(Intersection_Block):
+    '''This is a kind of Intersection Block that is a substitute just for the purpose
+       of computing the graph.
+    '''
+    @property
+    def block_type(self): return block_types['subblock']
+
+class Superblock(Census_Block):
+    '''This class is used for representing an original census block
+       that has been replaced by a collection of Subblocks.
+    '''
+    def __init__(self,ID, polygon, subblock_IDs):
+        self.ID = ID
+        self.block_type = block_types['superblock']
+        self.polygon = polygon
+        self.subblock_IDs = subblock_IDs
+    
+    def add_to_graph(self, G):
+        pass
 
 
 def gen(shapefilename):
@@ -52,7 +117,7 @@ def build_id2census_block(shapefilename):
         id2census_block[census_block.ID] = census_block
     return id2census_block
 
-
+'''
 if __name__ == "__main__":
     # write a file with some census block info
     if len(sys.argv) != 3:
@@ -82,3 +147,4 @@ if __name__ == "__main__":
                 + "\n"
             )
     of.close()
+'''
