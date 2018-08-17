@@ -5,7 +5,10 @@
 from util import swap, vec, dotproduct, norm
 from collections import defaultdict
 from math import atan2
-from shapely.geometry import LinearRing
+from shapely.geometry import Point
+from segment_definition import Segment
+import array
+import numpy
 
 def _remove_redundant(pts):
     "Mutates a list of points to get rid of those points that are not needed to define polygon"
@@ -19,46 +22,82 @@ def _remove_redundant(pts):
         else:
             i = i+1
 
-class SegmentMapper:
-    def __init__(self):
-        self.num_edges = 0
-        self.id2segment = {}
-        self.segment2id = {}
+#def round_float(x, epsilon):
+#    return int(x/epsilon)*epsilon
 
+#def round_pt(pt, epsilon):
+#    return (round_float(pt[0], epsilon), round_float(pt[1], epsilon))
+
+#def round_segment(seg, epsilon):
+#    return round_pt(seg[0], epsilon), round_pt(seg[1], epsilon)
+
+class PreUsedSegment(Exception):
+    def __init__(self, id):
+        self.id = id
+
+class SegmentMapper:
+    def __init__(self, cancel = False):
+        self.num_edges = 0
+        self.id2segment = []
+        self.id2matched = array.array('B')
+        self.segment2id = {}
+        self.cancel = cancel
+    
     def add_segment(self, segment):
         '''segment is a pair of points, where each point is a pair
            This procedure assigns a dart id for each segment it is given.
            The ids follow the LSB convention: for two segments that are the
            reverse of each other, the corresponding dart ids differ only in their LSBs.
-           They have the same edge ids.
+           They have the same edge ids
+           The procedure returns the dart id, and stores the dart id-to-segment association in id2segment.
+           It also stores the the association from (a possibly rounded version of) the segment to the id in segment2id
         '''
-        if swap(segment) in self.segment2id:
-            self.segment2id[segment] = self.segment2id[swap(segment)] + 1
-        else: 
-            self.segment2id[segment] = 2*self.num_edges
+        seg = Segment(segment)
+        if seg.swap() in self.segment2id:
+            new_id = self.segment2id[seg.swap()] + 1
+            self.id2matched[new_id >> 1] = 1
+            if self.cancel:
+                del self.segment2id[seg.swap()]
+                self.id2segment[new_id - 1] = 0
+        else:
+            new_id = 2*self.num_edges
+            self.segment2id[seg] = new_id
             self.num_edges += 1
-        self.id2segment[self.segment2id[segment]] = segment
+            self.id2segment.append(seg)
+            self.id2matched.append(0)
+        return new_id
 
     def get_id(self, segment):
-        return self.segment2id[segment]
+        seg = Segment(segment)
+        return self.segment2id[seg] if seg in self.segment2id else self.segment2id[seg.swap()]+1
 
-    def get_segment(self, id):
-        return self.id2segment[id]
+    def get_segment(self, ID):
+        return self.id2segment[ID >> 1].pt_pair() if ID % 2 == 0 else self.id2segment[(ID-1) >> 1].swap().pt_pair()
     
-    def get_segments(self): return self.segment2id
+    def get_missing_segments(self):
+        '''Includes the reverse of each segment whose reverse has not been added'''
+        return [self.id2segment[i].swap().pt_pair() for i in range(len(self.id2segment)) if not self.id2matched[i]]
 
 class EGraph:
-    def __init__(self):
+    def __init__(self, m, n, epsilon=0):
+        '''if geometric object provided, neighbors are restricted to those along segments
+        that intersect the geometric object'''
+        self.number_of_vertices = 0
+        self.number_of_darts = 0
         self.segmentmapper = SegmentMapper()
-        self.vertices = []
-        self.next = {}
-        self.head = {}
-        self.outer2inner = {} #mapping vertex representing an outer boundary to vertices representing inner boundaries
+        Segment.eps = epsilon #A hack to get segments to match when approximately the same
+        #(This is a hack because this applies to all Segments.)
+        self.vertices = [array.array('L') for _ in range(n)] 
+        self.next = numpy.full(2*m, -1, dtype=numpy.int64)
+        self.head = numpy.full(2*m, -1, dtype=numpy.int64)
+        self.outer2inner = {}  #[array.array('L') for _ in range(n)] #mapping vertex representing an outer boundary to vertices representing inner boundaries
         self.inner2outer = {}
                 
     def rev(self, dart_id): return dart_id ^ 1
     
     def edge(self, dart_id): return dart_id >> 1
+    
+    def is_dart_present(self, dart_id): return self.head[dart_id] >= 0
     
     def add_region(self, region, remove_redundant = False):
         '''Region is a polygon with an outer boundary and possibly inner boundaries.
@@ -77,35 +116,33 @@ class EGraph:
             self.inner2outer[v] = outer_vertex
     
     def _new_vertex(self):
-        self.vertices.append([]) # create new entry in vertices table--this will record new incoming darts
+        assert self.number_of_vertices < len(self.vertices)
+        self.number_of_vertices += 1 #
         
     def _process_boundary(self, linear_ring, remove_redundant):
-        '''
-        darts associated with a vertex (a region) are clockwise-going segments around the region
-        '''
         self._new_vertex()
-        pts = list(linear_ring.coords)[:-1] #omit last pt, which equals first
+        pts = linear_ring.coords[:-1] #omit last pt, which equals first
         if remove_redundant: _remove_redundant(pts) #first get rid of redundant pts
+        first_id = None
         for i in range(len(pts)):
             new_id = self._new_segment_helper(pts[i], pts[(i+1)%len(pts)]) #adds dart to vertices table
-            if i==0:
+            if first_id == None:
                 first_id = new_id
             else:
                 self.next[prev_id] = new_id
             prev_id = new_id
-        self.next[new_id] = first_id
+        if first_id != None: #Could be that no points are included
+            self.next[new_id] = first_id
     
     def _new_dart_helper(self, dart_id):
-            vertex_id = len(self.vertices)-1 #last entry in vertices table
+            vertex_id = self.number_of_vertices - 1
             self.head[dart_id] = vertex_id #record head of new dart
             self.vertices[vertex_id].append(dart_id) #add incoming dart to vertices table
             
     def _new_segment_helper(self, pt0, pt1):
-            "returns id of new dart"
+            "adds dart to tables for new vertex (via _new_dart_helper) and returns id of new dart"
             segment = pt0, pt1
-            self.segmentmapper.add_segment(segment)
-            new_dart_id = self.segmentmapper.segment2id[segment]
-            vertex_id = len(self.vertices)-1 #last entry in vertices table
+            new_dart_id = self.segmentmapper.add_segment(segment)
             self._new_dart_helper(new_dart_id)
             return new_dart_id
 
@@ -113,12 +150,10 @@ class EGraph:
         '''After cells have been processed, those segments not appearing twice
         form boundaries of other regions.
         '''
-        self.infinite = [] #Keep track of those regions with ccw "exterior".  These represent infinite regions.
         def head(segment): return segment[1]
         def tail(segment): return segment[0]
         #Among the reverses of segments that do appear, which ones do not appear?
-        outer_segments = [swap(segment) for segment in self.segmentmapper.get_segments()
-                              if swap(segment) not in self.segmentmapper.get_segments()]
+        outer_segments = self.segmentmapper.get_missing_segments()
         incident = defaultdict(list) #Will map each point to incident segments, or rather to pairs (segment, bool)
         #where bool indicates incoming (True) or outgoing (False)
         #Populate incident table 
@@ -131,7 +166,7 @@ class EGraph:
         def angle_finder(start):
             return lambda end_plus: atan2(pt(end_plus)[1]-start[1], pt(end_plus)[0]-start[0])
         #Create and populate analogue of next table for the segments
-        #(Not using true next table yet because it is helpful to known vertex id at same time
+        #(Not using true next table yet because it is helpful to known vertex id at same time)
         segment_next = {}
         for pt0,pts_plus in incident.items():
             pts_plus.sort(key=angle_finder(pt0))
@@ -142,13 +177,11 @@ class EGraph:
             if initial_segment not in used:
                 #Create new vertex
                 self._new_vertex()
-                pts = [] #Keep track of points for purpose of determining if it is an infinite region
                 #Traverse cycle containing initial_segment
                 segment = initial_segment
                 prev_dart_id = None
                 while segment != initial_segment or prev_dart_id == None:
                     used.add(segment) #record having traversed this segment
-                    pts.append(tail(segment))
                     dart_id = self._new_segment_helper(tail(segment), head(segment))
                     if prev_dart_id != None:
                         self.next[prev_dart_id] = dart_id
@@ -159,30 +192,28 @@ class EGraph:
                     assert not incoming
                     prev_dart_id = dart_id
                 self.next[prev_dart_id] = self.segmentmapper.get_id(segment) #complete the cycle
-                if LinearRing(pts).is_ccw:
-                    self.infinite.append(self.num_vertices() - 1) #Keep track of regions corresponding to infinite regions
 
     def region_data(self, vertex_id):
-        "Given the id of the vertex corresponding to the outer boundary of a region, return the boundaries"
-        outer_boundary = [self.segmentmapper.get_segment(id)[0] for id in self.vertices[vertex_id]]
-        inner_boundaries = [[self.segmentmapper.get_segment(id)[0] for id in self.vertices[inner_vertex_id]] for inner_vertex_id in self.outer2inner.get(vertex_id, [])]
+        '''Given the id of the vertex corresponding to the outer boundary of a region, return the boundaries.
+           (Maybe should just return a polygon?  That would require importing Polygon.)'''
+        outer_boundary = [self.segmentmapper.get_segment(ID)[0] for ID in self.vertices[vertex_id]]
+        inner_boundaries = [[self.segmentmapper.get_segment(ID)[0] for ID in self.vertices[inner_vertex_id]] for inner_vertex_id in self.outer2inner.get(vertex_id, [])]
         return outer_boundary, inner_boundaries
         
     def next(self, id): return self.next[id]
 
     def incoming(self, vertex_id): return self.vertices[vertex_id]
 
-    def id2segment(self, id): return self.segentmapper.get_segment(id)
+    def id2segment(self, id): return self.segmentmapper.get_segment(id)
 
-    def num_vertices(self): return len(self.vertices)
+    def num_vertices(self): return self.number_of_vertices
 
-    def num_darts(self): return len(self.next)
-            
     def endpoints(self, dart_id):
         return [self.head[d] for d in [dart_id, self.rev(dart_id)]]
 
     def neighbors(self, v):
-            return [self.head[self.rev(d)] for d in self.vertices[v] if self.rev(d) in self.head] + \
+            adjoining = [self.head[self.rev(d)] for d in self.vertices[v] if self.is_dart_present(self.rev(d))]
+            return adjoining + \
                   (self.outer2inner[v] if v in self.outer2inner else []) + \
                   ([self.inner2outer[v]] if v in self.inner2outer else [])
 
@@ -207,14 +238,6 @@ class EGraph:
                 sizes.append(self._visit(vertex, len(component_reps), include_fn, v2component_number))
                 component_reps.append(vertex)
         return component_reps, v2component_number, sizes
-
-
-#    def dual(self):
-#        G = Egraph()
-#        for dart in range(self.num_darts()):
-#            G.next[dart] =
-
-
 
 
 '''
