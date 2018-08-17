@@ -11,6 +11,5 @@ def gen(census_block_generator, C_3D):
     blocks = list(census_block_generator)
     centroids = [(block.centroid.x,block.centroid.y,0)  for block in blocks]
     results = tree.query(centroids)
-    fout = open("foo_fast.txt",'w')
     return zip(blocks, results[1])
 
