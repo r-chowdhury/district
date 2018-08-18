@@ -258,6 +258,9 @@ $(STATES:%=$(OUT)/prepare_ILP/%): $(OUT)/prepare_ILP/%: $(OUT)/do_redistrict/% s
 	python3 prepare_ILP.py $* shapestate_data/cb_2017_us_state_500k $(OUT)/preprocess_census_block/$* $< $@ $@_blockdata
 	@ test -s $@
 
+$(OUT)/prepare_ILP/%_blockdata: $(OUT)/prepare_ILP/%
+
+
 # .PRECIOUS: $(OUT)/prepare_ILP/%
 
 #################
