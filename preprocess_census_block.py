@@ -31,6 +31,7 @@ if __name__ == "__main__":
     print("preprocess_census_block.  Estimated number of edges: ", m, " Estimated number of vertices: ", n)
     sf = shapefile.Reader(shapefilename)
     graph = EGraph(int(1.1*m), int(1.1*n))
+    graph.segmentmapper.cancel = True
     counter = 0
     block_counter = 0
     bounds = (float('infinity'), float('infinity'),-float('infinity'),-float('infinity'))
