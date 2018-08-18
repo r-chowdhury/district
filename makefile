@@ -253,13 +253,10 @@ $(STATES:%=$(OUT)/do_redistrict/%): $(OUT)/do_redistrict/%: $(OUT)/get_census_bl
 #################
 #example: python3 prepare_ILP.py FL shapestate_data/cb_2017_us_state_500k makefile_outputs/preprocess_census_block/FL makefile_outputs/do_redistrict/FL makefile_outputs/prepare_ILP/FL
 
-$(STATES:%=$(OUT)/prepare_ILP/%): $(OUT)/prepare_ILP/%: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_500k* $(OUT)/preprocess_census_block/% prepare_ILP.py
+$(OUT)/prepare_ILP/% $(OUT)/prepare_ILP/%_blockdata: $(OUT)/do_redistrict/% shapestate_data/cb_2017_us_state_500k* $(OUT)/preprocess_census_block/% prepare_ILP.py
 	@ mkdir -p $(OUT)/prepare_ILP
 	python3 prepare_ILP.py $* shapestate_data/cb_2017_us_state_500k $(OUT)/preprocess_census_block/$* $< $@ $@_blockdata
 	@ test -s $@
-
-$(OUT)/prepare_ILP/%_blockdata: $(OUT)/prepare_ILP/%
-
 
 # .PRECIOUS: $(OUT)/prepare_ILP/%
 
