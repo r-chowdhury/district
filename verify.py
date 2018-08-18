@@ -58,7 +58,7 @@ def connectivity(state_abbreviation, state_boundary_shapefilename, assignment_fi
     for i in range(len(cells)):
         log_file.write("district"+str(i)+"\n")
         vertex2block_ID = {}
-        n = int(1.1*len(district2block_IDs[i])) #estimate number of vertices
+        n = int(1.1*len(district2block_IDs[i]) + sum(len(block_ID2block[block_ID].polygon.interiors) for block_ID in district2block_IDs[i])) #estimate number of vertices
         m = int(.6*sum(num_polygon_segments(block_ID2block[block_ID].polygon) for block_ID in district2block_IDs[i])) #estimate number of edges
         G = EGraph(m, n, 1e-12) #allow for some rounding error in matching line segments
         for block_ID in district2block_IDs[i]:
