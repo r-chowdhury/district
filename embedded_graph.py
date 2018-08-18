@@ -58,7 +58,7 @@ class SegmentMapper:
             self.id2matched[new_id >> 1] = 1
             if self.cancel:
                 del self.segment2id[seg.swap()]
-                self.id2segment[new_id - 1] = 0
+                self.id2segment[new_id >> 1] = 0
         else:
             new_id = 2*self.num_edges
             self.segment2id[seg] = new_id
@@ -147,6 +147,7 @@ class EGraph:
             return new_dart_id
 
     def find_outer(self):
+        self.segmentmapper.cancel = False
         '''After cells have been processed, those segments not appearing twice
         form boundaries of other regions.
         '''
