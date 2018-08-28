@@ -47,6 +47,7 @@ def test(state_abbreviation, state_boundary_shapefilename, census_shapefilename,
     #Here, item.population is the population of the block assigned to the district by the balanced solution
     #If the block is not represented in power_diagram_result, the block's population is zero.
     for block, rel in L:
+        if block.ID not in decided_block_IDs:
             for district, info in rel.items():
                 info.population = power_diagram_result[block.ID].get(district, 0) if block.ID in power_diagram_result else 0
             yield block, rel
