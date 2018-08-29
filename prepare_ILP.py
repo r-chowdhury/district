@@ -47,27 +47,29 @@ def test(state_abbreviation, state_boundary_shapefilename, census_shapefilename,
     #Here, item.population is the population of the block assigned to the district by the balanced solution
     #If the block is not represented in power_diagram_result, the block's population is zero.
     for block, rel in L:
+        if block.ID not in decided_block_IDs:
             for district, info in rel.items():
                 info.population = power_diagram_result[block.ID].get(district, 0) if block.ID in power_diagram_result else 0
             yield block, rel
 
 
-args = sys.argv[1:]
-state_abbreviation = args.pop(0)
-state_boundary_shapefilename = args.pop(0)
-shapefilename = args.pop(0)
-assignment_filename = args.pop(0)
-output_filename = args.pop(0)
-processed_block_filename = args.pop(0)
-fout = open(output_filename, 'w')
-block_output_file = open(processed_block_filename, 'wb')
-for district_discrepancy in initial_discrepancy.find(assignment_filename):
-    fout.write(str(district_discrepancy)+" ")
-fout.write("\n")
-for census_block, relevant_district_items in test(state_abbreviation, state_boundary_shapefilename, shapefilename, assignment_filename, block_output_file):
-    fout.write(str(census_block.ID)+" ")
-    for district, info in relevant_district_items.items():
-        for value in [district, info.population, info.area, info.dependee if info.dependee != -1 else census_block.ID]:
-            fout.write(str(value)+" ")
+if __name__ == '__main__':
+    args = sys.argv[1:]
+    state_abbreviation = args.pop(0)
+    state_boundary_shapefilename = args.pop(0)
+    shapefilename = args.pop(0)
+    assignment_filename = args.pop(0)
+    output_filename = args.pop(0)
+    processed_block_filename = args.pop(0)
+    fout = open(output_filename, 'w')
+    block_output_file = open(processed_block_filename, 'wb')
+    for district_discrepancy in initial_discrepancy.find(assignment_filename):
+        fout.write(str(district_discrepancy)+" ")
     fout.write("\n")
-fout.close()
+    for census_block, relevant_district_items in test(state_abbreviation, state_boundary_shapefilename, shapefilename, assignment_filename, block_output_file):
+        fout.write(str(census_block.ID)+" ")
+        for district, info in relevant_district_items.items():
+            for value in [district, info.population, info.area, info.dependee if info.dependee != -1 else census_block.ID]:
+                fout.write(str(value)+" ")
+        fout.write("\n")
+    fout.close()

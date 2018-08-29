@@ -83,7 +83,6 @@ class EGraph:
         '''if geometric object provided, neighbors are restricted to those along segments
         that intersect the geometric object'''
         self.number_of_vertices = 0
-        self.number_of_darts = 0
         self.segmentmapper = SegmentMapper()
         Segment.eps = epsilon #A hack to get segments to match when approximately the same
         #(This is a hack because this applies to all Segments.)
