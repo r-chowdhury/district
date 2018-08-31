@@ -74,7 +74,10 @@ def get(census_block_plus_district_items_collection, cells, starting_number):
         #    block_ID2block_plus[block_ID][1][i].dependee = block_ID #indicates no dependency for district i
         waiting = deque(core)
         visited = set(core)
-        decided_block_IDs.update([vertex2block_ID[v] for v in core if v in vertex2block_ID]) # Don't need to consider vertices corresponding to inner boundaries---they don't correspond to blocks
+        decided_block_IDs_for_this_district = {vertex2block_ID[v] for v in core if v in vertex2block_ID} # Don't need to consider vertices corresponding to inner boundaries---they don't correspond to blocks
+        for block_ID in decided_block_IDs_for_this_district:
+            block_ID2block_plus[block_ID][0].home_district = i
+        decided_block_IDs.update(decided_block_IDs_for_this_district) 
         vertex2candidate_districts = [set() for _ in range(G.num_vertices())] #could use a dictionary
         def get_neighbors(v):
             L = [] #should be a set
