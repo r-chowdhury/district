@@ -40,7 +40,7 @@ def test(state_abbreviation, state_boundary_shapefilename, census_shapefilename,
     print("time 5 ", time.clock() - start_time)
     #Write blocks to block_output_file
     for block, _ in L:
-        census_block_file.write_census_block(block_output_file, block.ID, block.block_type, block.population, block.polygon)
+        census_block_file.write(block_output_file, block)
     block_output_file.close()
     d = {block.ID:(block, rel) for block,rel in L if block.ID not in decided_block_IDs}
     power_diagram_result = {id:pop_assignment for id, pop_assignment in initial_population_assignment.gen(assignment_filename)}
