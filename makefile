@@ -284,6 +284,14 @@ $(STATES:%=$(OUT)/verify/%): $(OUT)/verify/%: $(OUT)/split_pulp/% $(OUT)/prepare
 	touch $(OUT)/verify/$*
 
 #################
+################# 4.7 save_critical_blocks
+#################
+
+$(STATES:%=$(OUT)/save_critical_blocks/%): $(OUT)/save_critical_blocks/%: $(OUT)/split_pulp/% $(OUT)/prepare_ILP/%_blockdata save_critical_blocks.py
+	@ mkdir -p $(OUT)/save_critical_blocks
+	python3 save_critical_blocks.py $(OUT)/prepare_ILP/$*_blockdata $(OUT)/split_pulp/$* $(OUT)/save_critical_blocks/$*
+
+#################
 ################# 5. main_script
 #################
 
