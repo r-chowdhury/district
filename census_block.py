@@ -26,7 +26,7 @@ def has_original_polygon(block_type):
 
 class Census_Block:
 
-    def __init__(self, ID, block_type, polyg, population):
+    def __init__(self, ID, block_type, polyg, population, home_district = None):
         self.ID = ID
         self.block_type = block_type
         assert type(polyg) == Polygon
@@ -34,6 +34,7 @@ class Census_Block:
         self.population = population
         self.assignment_elements = []
         self.centroid_cache = None
+        if home_district != None: self.home_district = home_district
 
     @property
     def centroid(self):
