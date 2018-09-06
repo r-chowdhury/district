@@ -5,11 +5,7 @@ import scipy.spatial as sp
 import shapely.geometry as sg
 import census_block as cb
 import census_block_file as cbf
-import split_pulp as sp
 import prepare_ILP as prep
-import closest_kd
-import relevant_districts
-import census_block_district_intersection
 
 
 
@@ -33,6 +29,7 @@ def prepare_ILP(args):
 	fout.close()
 
 
+####OUTDATED WITH POLYGON_ASSIGNMENTS FUNCTION
 def parse_polygons(split_pulp_out, blockdata_filename):
 	#C aka C_3D
 	#G is an output of a the function from district_graph.py method get(), necessary for generating proper list of census blocks
@@ -41,9 +38,6 @@ def parse_polygons(split_pulp_out, blockdata_filename):
 
 	#L becomes the list of all census blocks
 	L = list(cbf.read(blockdata_filename))
-	#L = list(closest_kd.gen(L, C))
-	#L = list(relevant_districts.gen(L, G))
-	#L = list(census_block_district_intersection.gen(L, power_cells, len(L)))
 
 	polygons = {}
 	print(len(L))
@@ -67,6 +61,23 @@ def parse_polygons(split_pulp_out, blockdata_filename):
 	return polygons
 
 
+def polygon_assignments(save_critical_blocks_out):
+
+	polygons = {}
+
+	for block in cbf.read(save_critical_blocks_out):
+		polygon = block.polygon
+		assignment = block.home_district
+
+		if assignment not in polygons:
+			polygons[assignment] = [polygon]
+		else:
+			polygons[assignment].append(polygon)
+
+	return polygons
+
+
+
 def polygon_list(polygons):
 
 	all_polygons = []
@@ -80,31 +91,33 @@ def polygon_list(polygons):
 
 
 
-def compute_ILP(args):
+# def compute_ILP(args):
 
-	prepare_ILP(args)
-	with open('prep_tmp') as input:
-		assignment = sp.pulp_assign('gurobi', input)
+# 	prepare_ILP(args)
+# 	with open('prep_tmp') as input:
+# 		assignment = sp.pulp_assign('gurobi', input)
 
-	with open('output_tmp', 'w+') as output:
-		for b in sorted(assignment.keys()):
-			print(b, assignment[b], file=output)
+# 	with open('output_tmp', 'w+') as output:
+# 		for b in sorted(assignment.keys()):
+# 			print(b, assignment[b], file=output)
 
-	polygons = parse_polygons('output_tmp', args[2])
+# 	polygons = parse_polygons('output_tmp', args[2])
 
-	return polygons
+# 	return polygons
 
 
 
 if __name__ == '__main__':
 	'''Format: python3 census_polygons.py [state abbrev] [census block shapefile]'''
 
-	state_abbrev = sys.argv[1]
-	census_block_shapefile = sys.argv[2]
+	# state_abbrev = sys.argv[1]
+	# census_block_shapefile = sys.argv[2]
 
-	polygons = compute_ILP([state_abbrev, './shapestate_data/cb_2017_us_state_500k.shp', census_block_shapefile, './cluster_data/cluster_'+state_abbrev])
+	# polygons = compute_ILP([state_abbrev, './shapestate_data/cb_2017_us_state_500k.shp', census_block_shapefile, './cluster_data/cluster_'+state_abbrev])
 
-	print(polygons)
+	# print(polygons)
 
-	polygon_list(polygons)
+	# polygon_list(polygons)
+
+	polygon_assignments(sys.argv[1])
 
